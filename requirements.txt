@@ -8,6 +8,7 @@ einops
 datasets
 huggingface_hub
 
-# Optional (but recommended)
+##
 tqdm
 numpy
+pytest
