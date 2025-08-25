@@ -77,8 +77,16 @@ def _strip_wrappers(s: str) -> str:
                 s = m.group(1).strip()
                 changed = True
 
-    # --- KEY CHANGE: strip trailing punctuation BEFORE bracket peeling
+    # Keep: strip trailing punctuation BEFORE bracket peeling
     s = s.rstrip(".;:,").strip()
+
+    # --- NEW: normalize LaTeX spacing and clean stray backslashes
+    s = s.replace(r"\ ", " ")
+    s = s.replace(r"\,", " ")
+    s = s.replace(r"\;", " ")
+    s = s.replace(r"\!", " ")
+    s = s.replace(r"\:", " ")
+    s = re.sub(r"\\+$", "", s).strip()
 
     # remove one layer of surrounding brackets/parentheses if it wraps a single letter
     m = re.fullmatch(r"\(\s*([A-Za-z])\s*\)", s)
@@ -89,6 +97,7 @@ def _strip_wrappers(s: str) -> str:
         return m.group(1)
 
     return s
+
 
 
 def _normalize_text(s: str) -> str:
@@ -183,52 +192,61 @@ def _to_fraction_if_possible(s: str) -> Optional[Fraction]:
 # Candidate extraction from box
 # -----------------------------
 
+
 def _tokenize_box_candidates(s: str) -> List[str]:
-    """
-    Given cleaned inner boxed text (still may contain LaTeX), return candidate tokens
-    ordered by preference for evaluation:
-      1) numeric-like items (\frac{a}{b}, a/b, integers/decimals, ±x)
-      2) single letter choices (A-E, etc.)
-      3) circled numerals ①…⑩ -> mapped to digits
-      4) fallback whole string
-    """
     s0 = _strip_wrappers(s)
 
-    # Quick split on whitespace to surface tokens, but also keep the whole string as a fallback.
+    # --- NEW: proactively surface a letter choice anywhere (e.g., \textbf{(B)} ... 2\sqrt{...})
+    choice_hits: List[str] = []
+    for rx in [
+        re.compile(r"\\textbf\{\(\s*([A-Za-z])\s*\)\}"),
+        re.compile(r"\\mathrm\{\(\s*([A-Za-z])\s*\)\}"),
+        re.compile(r"\\text\{\(\s*([A-Za-z])\s*\)\}"),
+    ]:
+        m = rx.search(s0)
+        if m:
+            choice_hits.append(m.group(1).upper())
+            break
+    if not choice_hits:
+        m = re.search(r"[\(\[]\s*([A-Za-z])\s*[\)\]]", s0)
+        if m:
+            choice_hits.append(m.group(1).upper())
+
     tokens = re.split(r"\s+", s0) if s0 else []
 
-    # Expand common choice formats like \textbf{(D)} into 'D'
     expanded: List[str] = []
+    # Seed proactively found choice first
+    for ch in choice_hits:
+        expanded.append(ch)
+
     for t in tokens:
         tt = _strip_wrappers(t)
+        tt = tt.rstrip("\\")  # strip trailing backslashes
 
         # (D) -> D
         m = _paren_choice.fullmatch(tt)
         if m:
             tt = m.group(1)
 
-        # circled numerals mapping
+        # circled numerals
         if len(tt) == 1 and tt in _CIRCLED:
             expanded.append(str(_CIRCLED[tt]))
             continue
 
-        # remove surrounding parentheses like (A), keep A
         if re.fullmatch(r"\(?[A-Za-z]\)?", tt):
-            expanded.append(tt.strip("()"))
+            expanded.append(tt.strip("()").upper())
             continue
 
         expanded.append(tt)
 
-    # Dedupe while preserving order
     seen = set()
     out = []
     for t in expanded:
-        if t not in seen:
+        if t and t not in seen:
             seen.add(t)
             out.append(t)
 
-    # If everything was stripped to empty, keep original string
-    return [x for x in out if x] or ([s0] if s0 else [])
+    return out or ([s0] if s0 else [])
 
 def _parse_pm_number(t: str) -> Optional[Tuple[float, float]]:
     """
@@ -261,6 +279,18 @@ def _first_pm(tokens: List[str]) -> Optional[Tuple[float, float]]:
         if pair is not None:
             return pair
     return None
+
+def _looks_like_list(expr: str) -> bool:
+    """Heuristic: detect if expr is a list/interval of multiple values, not a single number."""
+    if not expr:
+        return False
+    # If comma-separated values like "-3, -1, 1"
+    if "," in expr:
+        return True
+    # If interval style (a, b)
+    if re.match(r"^\(?\s*[+-]?\d+(\.\d+)?\s*,\s*[+-]?\d", expr):
+        return True
+    return False
 
 # -----------------------------
 # Public APIs
@@ -362,6 +392,16 @@ def evaluate_teacher_response(
     # 2) Numeric/fraction symmetry (e.g., '(C) 29' vs '29' should pass)
     num_resp = first_numeric(tokens)
     num_exp  = first_numeric(expected_tokens) if expected_tokens else None
+
+    # --- NEW: detect multi-number answers (lists, intervals) → string compare only
+    if _looks_like_list(inner_clean) or (expected_clean and _looks_like_list(expected_clean)):
+        return {
+            "has_boxed": True,
+            "extracted_answer": _normalize_text(inner_clean),
+            "is_correct": _normalize_text(inner_clean) == _normalize_text(expected_clean or ""),
+            "comparison_mode": "string",
+            "details": "Detected multiple numbers (list/interval) → treating as string."
+        }
     if num_resp is not None or num_exp is not None:
         extracted = _normalize_text(inner_clean)
         if expected is None:
@@ -457,3 +497,12 @@ def evaluate_teacher_response(
         "comparison_mode": "string",
         "details": "Compared normalized strings."
     }
+
+
+if __name__ == "__main__":
+    # pass_response = r"$\boxed{\pm3}$"
+    # print(evaluate_teacher_response(response=pass_response, expected="±3"))
+    debug = r"\boxed{\frac{1}{2}}"
+    print(evaluate_teacher_response(response=debug, expected=r"\boxed{0.5}"))
+
+    
