@@ -14,7 +14,5 @@ ds_100k = load_dataset("MinTR-KIEU/NuminaMath-CoT-100k")
 
 
 
-### Next step
-- Make val samples
-- add teacher evaluation method
-- edit teacher prompt
+### Dev note
+- Evaluation method pass all test cases for single box, including edge cases. But for multiple boxes it will only check last boxes

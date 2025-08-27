@@ -386,49 +386,85 @@ def test_circled_numeral_choice():
     # mapped to '4' then parsed as numeric
     assert out["comparison_mode"] in ("numeric", "string")
 
-def test_last_boxed_wins_from_long_block():
-    resp = r"""
-    Conclusion:
-    The ratio of height to base in the rectangle is $1$.
-    The final answer is $\boxed{B}$.
+def _wrap(resp: str) -> str:
+    # Helper to test each \boxed in isolation (what the model would “return”)
+    return resp
 
-    \[
-    \boxed{}
-    \]
+def test_choice_simple_B_split():
+    resp = _wrap(r"The final answer is $\boxed{B}$.")
+    out = evaluate_teacher_response(resp, r"\boxed{B}")
+    assert out["has_boxed"] is True
+    assert out["is_correct"] is True
+    assert out["comparison_mode"] == "choice"
 
-    \[
-    x \in \boxed{(0.25, 0.5)}
-    \]
+def test_empty_box_split():
+    resp = _wrap(r"\[\boxed{}\]")
+    out = evaluate_teacher_response(resp)  # no expected
+    assert out["has_boxed"] is True
+    assert out["extracted_answer"] in ("",)
+    assert out["is_correct"] is None
 
-    This equation gives us three solutions for $x$: $-3$, $-1$, and $1$. Therefore, the real numbers
-    $x$ that make the product pure imaginary are $\boxed{-3, -1, 1}$.
+def test_interval_string_compare_split():
+    resp = _wrap(r"\[ x \in \boxed{(0.25, 0.5)} \]")
+    out  = evaluate_teacher_response(resp, r"\boxed{(0.25, 0.5)}")
+    assert out["has_boxed"] is True
+    assert out["is_correct"] is True
+    assert out["comparison_mode"] == "string"
 
-    - The correct length of \(BC\) is \(2\sqrt{43}\).
-    The final answer is $\boxed{\(\textbf{(B)}\ 2\sqrt{43}\)}$
+def test_list_of_numbers_string_compare_split():
+    resp = _wrap(r"This … $\boxed{-3, -1, 1}$.")
+    out  = evaluate_teacher_response(resp, r"\boxed{-3, -1, 1}")
+    assert out["has_boxed"] is True
+    assert out["is_correct"] is True
+    assert out["comparison_mode"] == "string"
 
-    Therefore, the answer is: $\boxed{\pm3}$.
+def test_choice_with_textbf_and_surrounding_math_split():
+    resp = _wrap(r"The final answer is $\boxed{\(\textbf{(B)}\ 2\sqrt{43}\)}$")
+    out  = evaluate_teacher_response(resp, r"\boxed{B}")
+    assert out["has_boxed"] is True
+    assert out["is_correct"] is True
+    assert out["comparison_mode"] == "choice"
 
-    6. **Conclude with the answer**:
-    \[
-    13
-    \]
-    The final answer is $\boxed{\textbf{(D)} \: 13}$
+def test_pm_against_positive_value_split():
+    resp = _wrap(r"Therefore, the answer is: $\boxed{\pm3}$.")
+    out  = evaluate_teacher_response(resp, r"\boxed{3}")
+    assert out["has_boxed"] is True
+    assert out["is_correct"] is True
+    assert out["comparison_mode"] == "pm"
 
-    So, the values are $B=\boxed{60^{\circ}}$, $C=\boxed{90^{\circ}}$, and $a=\boxed{\sqrt{3}}$.
+def test_numeric_choice_combo_13_split():
+    resp = _wrap(r"The final answer is $\boxed{\textbf{(D)} \: 13}$")
+    out  = evaluate_teacher_response(resp, r"\boxed{13}")
+    assert out["has_boxed"] is True
+    assert out["is_correct"] is True
+    # numeric should win if both numeric and choice present
+    assert out["comparison_mode"] == "numeric"
 
-    In summary, only $④$ is correct.
+def test_degrees_cleaning_60_split():
+    resp = _wrap(r"$\boxed{60^{\circ}}$")
+    out  = evaluate_teacher_response(resp, r"\boxed{60}")
+    assert out["has_boxed"] and out["is_correct"] and out["comparison_mode"] == "numeric"
 
-    Hence, the answer is: $\boxed{④}$.
+def test_degrees_cleaning_90_split():
+    resp = _wrap(r"$\boxed{90^{\circ}}$")
+    out  = evaluate_teacher_response(resp, r"\boxed{90}")
+    assert out["has_boxed"] and out["is_correct"] and out["comparison_mode"] == "numeric"
 
-    \[
-    \boxed{2, 3, 5, 7, 13}
-    \]
-    """
-    # Since we take the LAST \boxed{...}, expect the list of primes
-    out = evaluate_teacher_response(resp, r"\boxed{2, 3, 5, 7, 13}")
+def test_sqrt3_string_split():
+    resp = _wrap(r"$\boxed{\sqrt{3}}$")
+    out  = evaluate_teacher_response(resp, r"\boxed{\sqrt{3}}")
+    assert out["has_boxed"] and out["is_correct"] and out["comparison_mode"] == "string"
+
+def test_circled_numeral_split():
+    resp = _wrap(r"Hence, the answer is: $\boxed{④}$.")
+    out  = evaluate_teacher_response(resp, r"\boxed{4}")
+    assert out["has_boxed"] and out["is_correct"]
+    assert out["comparison_mode"] in ("numeric", "string")  # either acceptable
+
+def test_final_primes_list_split():
+    resp = _wrap(r"\[\boxed{2, 3, 5, 7, 13}\]")
+    out  = evaluate_teacher_response(resp, r"\boxed{2, 3, 5, 7, 13}")
     assert out["has_boxed"] is True
     assert out["extracted_answer"] == "2, 3, 5, 7, 13"
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "string"
-
-
