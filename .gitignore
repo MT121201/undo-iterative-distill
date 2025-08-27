@@ -209,3 +209,6 @@ __marimo__/
 # Dataset
 NuminaMath-CoT-10k/
 NuminaMath-CoT-100k/
+
+#draft
+draft.py

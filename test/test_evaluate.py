@@ -468,3 +468,90 @@ def test_final_primes_list_split():
     assert out["extracted_answer"] == "2, 3, 5, 7, 13"
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "string"
+
+@pytest.mark.parametrize(
+    "response,expected,expected_result",
+    [
+        # Numeric equality
+        (r"\boxed{42}", r"\boxed{42}", {"is_correct": True, "comparison_mode": "numeric", "extracted_answer": "42"}),
+        (r"foo \boxed{42}", r"\boxed{42}", {"is_correct": True, "comparison_mode": "numeric", "extracted_answer": "42"}),
+        # Numeric tolerance
+        (r"\boxed{3.1415926536}", r"\boxed{3.1415926535}", {"is_correct": True, "comparison_mode": "numeric"}),
+        (r"\boxed{3.1415}", r"\boxed{3.14}", {"is_correct": False, "comparison_mode": "numeric"}),
+        # Fraction and decimal equivalence
+        (r"\boxed{\frac{1}{2}}", r"\boxed{0.5}", {"is_correct": True, "comparison_mode": "numeric"}),
+        # Letter choice
+        (r"\boxed{(C)}", r"\boxed{C}", {"is_correct": True, "comparison_mode": "choice", "extracted_answer": "C"}),
+        (r"\boxed{B}", r"\boxed{B}", {"is_correct": True, "comparison_mode": "choice", "extracted_answer": "B"}),
+        (r"\boxed{A}", r"\boxed{B}", {"is_correct": False, "comparison_mode": "choice"}),
+        # ± symmetry
+        (r"\boxed{±3}", r"\boxed{3}", {"is_correct": True, "comparison_mode": "pm"}),
+        (r"\boxed{3}", r"\boxed{±3}", {"is_correct": True, "comparison_mode": "pm"}),
+        (r"\boxed{±2}", r"\boxed{3}", {"is_correct": False, "comparison_mode": "pm"}),
+        # String fallback
+        (r"\boxed{foo bar}", r"\boxed{foo bar}", {"is_correct": True, "comparison_mode": "string"}),
+        (r"\boxed{foo bar}", r"\boxed{bar foo}", {"is_correct": False, "comparison_mode": "string"}),
+        # List/interval fallback
+        (r"\boxed{1, 2, 3}", r"\boxed{1, 2, 3}", {"is_correct": True, "comparison_mode": "string"}),
+        (r"\boxed{(0.25, 0.5)}", r"\boxed{(0.25, 0.5)}", {"is_correct": True, "comparison_mode": "string"}),
+        # Circled numeral
+        (r"\boxed{④}", r"\boxed{4}", {"is_correct": True}),
+        # Currency normalization
+        (r"\boxed{\$280}", r"\boxed{280}", {"is_correct": True, "comparison_mode": "numeric"}),
+        # Degrees normalization
+        (r"\boxed{60^{\circ}}", r"\boxed{60}", {"is_correct": True, "comparison_mode": "numeric"}),
+        (r"\boxed{90°}", r"\boxed{90}", {"is_correct": True, "comparison_mode": "numeric"}),
+        # Factorial symbolic
+        (r"\boxed{13!}", r"\boxed{13!}", {"is_correct": True}),
+        # Factorial numeric equivalence
+        (r"\boxed{13!}", r"\boxed{6227020800}", {"is_correct": True, "comparison_mode": "numeric"}),
+        # No boxed answer
+        ("No box here", None, {"has_boxed": False, "extracted_answer": None}),
+        # Empty box
+        (r"\boxed{}", None, {"has_boxed": True, "extracted_answer": ""}),
+        (r"\boxed{}", r"\boxed{}", {"has_boxed": True, "extracted_answer": "", "is_correct": True}),
+        # Only extraction, no expected
+        (r"\boxed{123}", None, {"has_boxed": True, "extracted_answer": "123", "is_correct": None}),
+        # Non-numeric/choice fallback
+        (r"\boxed{\sqrt{3}}", r"\boxed{\sqrt{3}}", {"is_correct": True, "comparison_mode": "string"}),
+    ]
+)
+def test_evaluate_teacher_response_cases(response, expected, expected_result):
+    result = evaluate_teacher_response(response, expected)
+    for key, val in expected_result.items():
+        assert result[key] == val
+
+def test_evaluate_teacher_response_numeric_tolerance():
+    # Should be correct within tolerance
+    resp = r"\boxed{1.000000001}"
+    exp = r"\boxed{1.0}"
+    result = evaluate_teacher_response(resp, exp, numeric_tolerance=1e-8)
+    assert result["is_correct"] is True
+    # Should be incorrect if outside tolerance
+    result = evaluate_teacher_response(resp, exp, numeric_tolerance=1e-10)
+    assert result["is_correct"] is False
+
+def test_evaluate_teacher_response_pm_extraction_only():
+    # Only extraction, no expected
+    resp = r"\boxed{±7}"
+    result = evaluate_teacher_response(resp)
+    assert result["has_boxed"] is True
+    assert result["extracted_answer"] == "±7.0"
+    assert result["comparison_mode"] == "pm"
+    assert result["is_correct"] is None
+
+def test_evaluate_teacher_response_letter_choice_extraction_only():
+    resp = r"\boxed{(D)}"
+    result = evaluate_teacher_response(resp)
+    assert result["has_boxed"] is True
+    assert result["extracted_answer"] == "D"
+    assert result["comparison_mode"] == "choice"
+    assert result["is_correct"] is None
+
+def test_evaluate_teacher_response_string_extraction_only():
+    resp = r"\boxed{foo bar}"
+    result = evaluate_teacher_response(resp)
+    assert result["has_boxed"] is True
+    assert result["extracted_answer"] == "foo bar"
+    assert result["comparison_mode"] is None
+    assert result["is_correct"] is None

@@ -438,13 +438,19 @@ def evaluate_teacher_response(
             }
 
         if num_resp is not None and num_exp is not None:
-            diff = abs(float(num_resp) - float(num_exp))
+            try:
+                diff = abs(float(num_resp) - float(num_exp))
+                is_correct = diff <= numeric_tolerance
+                details = f"Numeric diff={diff}, tol={numeric_tolerance}"
+            except OverflowError:
+                is_correct = num_resp == num_exp
+                details = "Compared large fractions directly for equality due to float overflow."
             return {
                 "has_boxed": True,
                 "extracted_answer": extracted,
-                "is_correct": diff <= numeric_tolerance,
+                "is_correct": is_correct,
                 "comparison_mode": "numeric",
-                "details": f"Numeric diff={diff}, tol={numeric_tolerance}"
+                "details": details
             }
 
         # If only one side numeric → try last‑resort numeric parse on the other side’s cleaned string

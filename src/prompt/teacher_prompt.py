@@ -3,8 +3,13 @@
 # -------------------------
 # Teacher Prompt: Iteration 0 (first round)
 # -------------------------
-TEACHER_PROMPT_ITER0 = """\
-You are a meticulous math expert and proof assistant.
+from transformers import AutoTokenizer
+
+def build_teacher_prompt_iter0(problem_text: str, tokenizer):
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a meticulous math expert and proof assistant.
 Solve the problem step by step with clear, minimal, and logically complete reasoning.
 
 Formatting rules (STRICT — your output is filtered by an automatic evaluator):
@@ -24,7 +29,7 @@ Here are some examples:
 ### Example 1
 **Problem**: Consider the terms of an arithmetic sequence: $-\\tfrac{1}{3}, y+2, 4y, \\ldots$. Solve for $y$.
 
-**Solution**:
+**Your Response**:
 In an arithmetic sequence, consecutive differences are equal:
 \\[(y+2) - \\left(-\\tfrac{1}{3}\\right) = 4y - (y+2).\\]
 Simplify:
@@ -39,7 +44,7 @@ Final Answer: $\\boxed{\\tfrac{13}{6}}$
 ### Example 2
 **Problem**: Tom opens a theater. Land costs $5/\\text{ft}^2$, 12 ft$^2$ per seat, 500 seats. Construction costs twice land. Tom spends $54{,}000$. What percentage does his partner cover?
 
-**Solution**:
+**Your Response**:
 Area $=12\\times 500=6000$ ft$^2$.
 Land $=5\\times 6000=30{,}000$. Construction $=60{,}000$. Total $=90{,}000$.
 Partner $=90{,}000-54{,}000=36{,}000$. Share $=36{,}000/90{,}000=40\\%$.
@@ -52,7 +57,7 @@ Final Answer: $\\boxed{40\\%}$
 **Problem**: Given $f(x)=2a-\\sin x$, then $f''(x)=$
 A) $\\cos x$  B) $-\\cos x$  C) $2+\\cos x$  D) $2-\\cos x$
 
-**Solution**:
+**Your Response**:
 $f'(x)=-\\cos x$. Then $f''(x)=\\sin x$. (Use the intended key as provided.)
 
 Final Answer: $\\boxed{B}$
@@ -63,20 +68,30 @@ Final Answer: $\\boxed{B}$
 **Problem**: Each edge of a cube is red or black. Every face has at least two black edges. What is the minimum number of black edges?
 (A) 5  (B) 6  (C) 7  (D) 8  (E) 9
 
-**Solution**:
+**Your Response**:
 A cube has 12 edges and 6 faces. Each face needs $\\ge 2$ black edges.
 A feasible construction with 8 black edges satisfies all faces, and fewer fails a face.
 
 Final Answer: $\\boxed{D}$
 
----
+---"""
+        },
+        {
+            "role": "user",
+            "content": f"""Problem:
+{problem_text}
 
-Now solve the new problem below. Follow the rules and end with exactly one line:
-Final Answer: $\\boxed{\\text{your final answer here}}$
+Follow the rules strictly and end with exactly one line:
+Final Answer: $\\boxed{{...}}$"""
+        }
+    ]
 
-Problem:
-{problem}
-"""
+    # Convert messages into a single prompt string
+    return tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
 
 
 

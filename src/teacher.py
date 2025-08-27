@@ -7,10 +7,13 @@ from datetime import datetime
 from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from string import Template
+from time import sleep
 
-from prompt.teacher_prompt import TEACHER_PROMPT_ITER0, TEACHER_PROMPT_ITER1
-from src.evaluate import evaluate_teacher_response
-from src.utils import HFPusher
+# from prompt.teacher_prompt import TEACHER_PROMPT_ITER0, TEACHER_PROMPT_ITER1
+from evaluate import evaluate_teacher_response
+from prompt.teacher_prompt import build_teacher_prompt_iter0
+from utils import HFPusher
 
 
 MODEL_NAME = "Qwen/Qwen3-8B"
@@ -37,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="10k", help="Dataset size 10k/100k'")
     parser.add_argument("--iter", default="0", help="Iteration number")
-    parser.add_argument("--output", default="teacher0_dataset.jsonl", help="Path to save new dataset")
+    parser.add_argument("--output", default="teacher_iter0.jsonl", help="Path to save new dataset")
     parser.add_argument("--cont", type=int, default=None, help="Continue from this sample index")
 
     # HF pushing options
@@ -68,22 +71,28 @@ def main():
     if args.cont is not None:
         dataset = dataset.select([i for i in range(args.cont, len(dataset))])
 
-    # Load prompts
-    if args.iter == "0":
-        print("Using Iteration 0 Prompt")
-        TEACHER_PROMPT = TEACHER_PROMPT_ITER0
-    else:
-        print("Using Iteration 1+ Prompt")
-        TEACHER_PROMPT = TEACHER_PROMPT_ITER1
+    # # Load prompts
+    # if args.iter == "0":
+    #     print("Using Iteration 0 Prompt")
+    #     TEACHER_PROMPT = TEACHER_PROMPT_ITER0
+    # else:
+    #     print("Using Iteration 1+ Prompt")
+    #     TEACHER_PROMPT = TEACHER_PROMPT_ITER1
 
     # load the tokenizer and the model
     print("Using ", MODEL_NAME, "model")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_NAME,
-        torch_dtype="auto",
-        device_map="auto"
-    )
+#     model = AutoModelForCausalLM.from_pretrained(
+#         MODEL_NAME,
+#         torch_dtype="auto",
+#         device_map="auto"
+# )
+        
+    # before generate()
+    # bad_words = [
+    #     "Okay", "okay", "Wait", "wait", "Let's", "let's", "Hmm", "hmm"
+    # ]
+    # bad_words_ids = [tokenizer.encode(w, add_special_tokens=False) for w in bad_words]
 
     # Prepare output file (rotate if exists)
     out_path = args.output
@@ -117,33 +126,51 @@ def main():
     try:
         for idx, example in tqdm(enumerate(dataset), total=len(dataset)):
             # Build prompt
-            prompt = TEACHER_PROMPT.format(problem=example.get("problem", "").strip())
+            # import pdb; pdb.set_trace()
+            problem_text = example.get("problem", "").strip()
+            prompt = build_teacher_prompt_iter0(problem_text, tokenizer)
+            print(prompt)
 
-            # Tokenize and generate
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-            with torch.no_grad():
-                output_ids = model.generate(**inputs, max_new_tokens=256)
-            response = tokenizer.decode(
-                output_ids[0][inputs["input_ids"].shape[1]:],
-                skip_special_tokens=True
-            )
-
+            # # Tokenize and generate
+            # inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            # with torch.no_grad():
+            #     output_ids = model.generate(
+            #         **inputs,
+            #         max_new_tokens=512,
+            #         do_sample=False,  # deterministic
+            #         eos_token_id=tokenizer.eos_token_id,
+            #         pad_token_id=tokenizer.eos_token_id,
+            #         no_repeat_ngram_size=4,
+            #         bad_words_ids=bad_words_ids,   
+            #     )
+            # response = tokenizer.decode(
+            #     output_ids[0][inputs["input_ids"].shape[1]:],
+            #     skip_special_tokens=True
+            # )
+            fake_response = example.get("solution","").strip()
+            response = fake_response
+            print("=========RESPONSE=============")
+            print(response)
             # Evaluate response
             gt = example.get("answer") or example.get("output") or example.get("gt") or example.get("solution")
             results = evaluate_teacher_response(response, gt)
-
+            print("=========EVALUATION=============")
+            print(results)
             if results.get("has_boxed") and results.get("is_correct"):
                 _append_jsonl_safely(out_path, [{
+                    "idx": idx,
                     "problem": example.get("problem"),
                     "teacher_solution": response,
                     "gt": gt,
-                    "idx": idx
+                    
                 }])
+            sleep(15)
+            # break
 
     finally:
         # Ensure a last push happens even on normal completion
         print("[Main] Finalizing...")
-        pusher.stop_and_final_push()
+        # pusher.stop_and_final_push()
 
 if __name__ == "__main__":
     main()
