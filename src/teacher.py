@@ -2,29 +2,54 @@ import argparse
 import os
 import json
 import torch
-from datasets import load_dataset, Dataset
+import signal
+from datetime import datetime
+from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from prompt.teacher_prompt import TEACHER_PROMPT_ITER0, TEACHER_PROMPT_ITER1
-import datetime
 from src.evaluate import evaluate_teacher_response
+from src.utils import HFPusher
+
 
 MODEL_NAME = "Qwen/Qwen3-8B"
 
-def _save_to_new_dataset(data, output_file):
+# --------------------------- Safe writer ---------------------------
+
+def _append_jsonl_safely(path, records):
     """
-    Save correct model response to new dataset
+    Append JSON lines safely:
+    - open in append mode
+    - write each line + newline
+    - flush + fsync so data hits disk
     """
-    with open(output_file, "a") as f:
-        for item in data:
-            f.write(json.dumps(item) + "\n")
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        for item in records:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+# ------------------------------- Main ------------------------------
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="10k", help="Dataset size 10k/100k'")
     parser.add_argument("--iter", default="0", help="Iteration number")
-    parser.add_argument("--output", default="new_dataset.jsonl", help="Path to save new dataset")
+    parser.add_argument("--output", default="teacher0_dataset.jsonl", help="Path to save new dataset")
     parser.add_argument("--cont", type=int, default=None, help="Continue from this sample index")
+
+    # HF pushing options
+    parser.add_argument("--hf_repo", required=True,
+                        help="HF dataset repo id, e.g., 'your-username/my-new-dataset'")
+    parser.add_argument("--hf_path_in_repo", default=None,
+                        help="Path inside repo (default: data/<output_basename>)")
+    parser.add_argument("--push_every_min", type=int, default=30,
+                        help="Autosave interval in minutes (>=1)")
+
+    parser.add_argument("--hf_private", type=int, default=0, help="Create private repo (1) or public (0) if new")
+
     args = parser.parse_args()
 
     # Load dataset
@@ -41,7 +66,7 @@ def main():
 
     # Continues sampling from index
     if args.cont is not None:
-        dataset = dataset.select([i for i in list(range(args.cont, len(dataset)))])
+        dataset = dataset.select([i for i in range(args.cont, len(dataset))])
 
     # Load prompts
     if args.iter == "0":
@@ -58,47 +83,67 @@ def main():
         MODEL_NAME,
         torch_dtype="auto",
         device_map="auto"
-)
+    )
 
-    # Prepare output file
-    if os.path.exists(args.output):
-        base, ext = os.path.splitext(args.output)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.output = f"{base}_{timestamp}{ext}"
-        print(f"Output file exists. Saving to new file: {args.output}")
+    # Prepare output file (rotate if exists)
+    out_path = args.output
+    if os.path.exists(out_path):
+        base, ext = os.path.splitext(out_path)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = f"{base}_{timestamp}{ext}"
+        print(f"Output file exists. Saving to new file: {out_path}")
 
-    for idx, example in tqdm(enumerate(dataset), total=len(dataset)):
-        # NOTE: Add a timer here calculate remaining time
+    # Prepare HF pusher
+    path_in_repo = args.hf_path_in_repo or f"data/{os.path.basename(out_path)}"
+    pusher = HFPusher(
+        repo_id=args.hf_repo,
+        local_path=out_path,
+        path_in_repo=path_in_repo,
+        interval_sec=max(60, args.push_every_min * 60),
+        private=bool(args.hf_private)
+    )
+    pusher.start()
 
-        # Dataset keys:  dict_keys(['source', 'problem', 'solution', 'messages'])
-        # NOTE: Fix this after have prompt template
-        prompt = prompts[idx % len(prompts)].format(**example)
+    # Graceful stop on SIGINT/SIGTERM
+    def _handle_signal(signum, frame):
+        print(f"\n[Signal {signum}] Caught. Finalizing and pushing to HF...")
+        pusher.stop_and_final_push()
+        # Exit immediately after final push
+        os._exit(0)
 
-        # Tokenize and generate
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-        with torch.no_grad():
-            output_ids = model.generate(**inputs, max_new_tokens=256)
-        response = tokenizer.decode(output_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+    signal.signal(signal.SIGINT, _handle_signal)
+    signal.signal(signal.SIGTERM, _handle_signal)
 
-        # Evaluate response
-        gt = example.get("answer") or example.get("output") or example.get("gt") or example.get("solution")
-        results = evaluate_teacher_response(response, gt)
-        # results:
-        # Dict[str, Any]: A dictionary with the following keys:
-        #     - 'has_boxed' (bool): Whether a boxed answer was found in the response.
-        #     - 'extracted_answer' (str or None): The extracted answer from the boxed content.
-        #     - 'is_correct' (bool or None): Whether the extracted answer matches the expected answer (None if expected is not provided).
-        #     - 'comparison_mode' (str or None): The mode of comparison used ('pm', 'numeric', 'choice', 'string', or None).
-        #     - 'details' (str): Additional details about the comparison process.
-        if results.get("has_boxed"):
-            if results.get("is_correct"):
-                # If the response is correct, we can save it
-                _save_to_new_dataset([{
-                    "input": example.get("problem"),
-                    "response": response,
+    try:
+        for idx, example in tqdm(enumerate(dataset), total=len(dataset)):
+            # Build prompt
+            prompt = TEACHER_PROMPT.format(problem=example.get("problem", "").strip())
+
+            # Tokenize and generate
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                output_ids = model.generate(**inputs, max_new_tokens=256)
+            response = tokenizer.decode(
+                output_ids[0][inputs["input_ids"].shape[1]:],
+                skip_special_tokens=True
+            )
+
+            # Evaluate response
+            gt = example.get("answer") or example.get("output") or example.get("gt") or example.get("solution")
+            results = evaluate_teacher_response(response, gt)
+
+            if results.get("has_boxed") and results.get("is_correct"):
+                _append_jsonl_safely(out_path, [{
+                    "problem": example.get("problem"),
+                    "teacher_solution": response,
                     "gt": gt,
                     "idx": idx
-                }], args.output)
+                }])
+
+    finally:
+        # Ensure a last push happens even on normal completion
+        print("[Main] Finalizing...")
+        pusher.stop_and_final_push()
 
 if __name__ == "__main__":
     main()
