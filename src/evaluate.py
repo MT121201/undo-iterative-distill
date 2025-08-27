@@ -300,6 +300,30 @@ def evaluate_teacher_response(
     expected: Optional[str] = None,
     numeric_tolerance: float = 1e-9,
 ) -> Dict[str, Any]:
+    """
+    Evaluates a teacher's response string against an expected answer, supporting numeric, symbolic (±), letter choice, and string-based comparisons.
+    Parameters:
+        response (str): The teacher's response, typically containing a boxed answer (e.g., '\\boxed{...}').
+        expected (Optional[str]): The expected answer for comparison. If None, only extraction is performed.
+        numeric_tolerance (float): Tolerance for numeric comparisons (default: 1e-9).
+    Returns:
+        Dict[str, Any]: A dictionary with the following keys:
+            - 'has_boxed' (bool): Whether a boxed answer was found in the response.
+            - 'extracted_answer' (str or None): The extracted answer from the boxed content.
+            - 'is_correct' (bool or None): Whether the extracted answer matches the expected answer (None if expected is not provided).
+            - 'comparison_mode' (str or None): The mode of comparison used ('pm', 'numeric', 'choice', 'string', or None).
+            - 'details' (str): Additional details about the comparison process.
+    Comparison Modes:
+        - 'pm': Handles ± (plus-minus) symmetry, accepting either sign if appropriate.
+        - 'numeric': Compares numeric or fractional answers within the specified tolerance.
+        - 'choice': Compares letter choices (e.g., 'A', 'B', 'C').
+        - 'string': Falls back to normalized string comparison for other cases.
+    Notes:
+        - If the response or expected answer contains multiple numbers (e.g., lists or intervals), string comparison is used.
+        - If no boxed answer is found, returns with 'has_boxed' set to False and 'is_correct' as None.
+    """
+
+
     inner = _find_last_boxed(response)
     if inner is None:
         return {
@@ -502,7 +526,7 @@ def evaluate_teacher_response(
 if __name__ == "__main__":
     # pass_response = r"$\boxed{\pm3}$"
     # print(evaluate_teacher_response(response=pass_response, expected="±3"))
-    debug = r"\boxed{\frac{1}{2}}"
-    print(evaluate_teacher_response(response=debug, expected=r"\boxed{0.5}"))
-
+    # debug = r"\boxed{\frac{1}{2}}"
+    # print(evaluate_teacher_response(response=debug, expected=r"\boxed{0.5}"))
+    pass
     
