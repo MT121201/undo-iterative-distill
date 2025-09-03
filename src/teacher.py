@@ -125,10 +125,22 @@ def main():
     try:
         for idx, example in tqdm(enumerate(dataset), total=len(dataset)):
             # Build prompt
-            # import pdb; pdb.set_trace()
+            # Check if GT have boxed, if not pass this sample
+            solution_text = example.get("solution", "").strip()
+            fake_response = r"\boxed{4}"
+            fake_result = evaluate_teacher_response(solution_text, fake_response)
+            if not fake_result.get("has_boxed"):
+                continue
+
+            
             problem_text = example.get("problem", "").strip()
             prompt = build_teacher_prompt_iter0(problem_text, tokenizer)
-            print(prompt)
+            if idx == 0:
+                print("========PROMPT TEMPLATE========")
+                print(prompt)
+            else:
+                print("=========PROBLEM=============")
+                print(problem_text)
 
             # Tokenize and generate
             inputs = tokenizer(prompt, return_tensors="pt").to(model.device)

@@ -29,8 +29,8 @@ To perform teacher inference, use:
 python src/teacher.py \
     --dataset 10k \
     --iter 0 \
-    --output teacher0_dataset.jsonl \
-    --hf_repo MinTR-KIEU/teacher-iter0 \
+    --output QWEN3_30B_10k_Iter0.jsonl \
+    --hf_repo MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0 \
     --hf_private 0 \
     --push_every_min 30
 ```
