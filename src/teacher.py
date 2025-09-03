@@ -16,8 +16,10 @@ from prompt.teacher_prompt import build_teacher_prompt_iter0
 from utils import HFPusher
 
 
-MODEL_NAME = "Qwen/Qwen3-8B"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5"
 
+model_id = "Qwen/Qwen3-30B-A3B-Instruct-2507"
+max_mem = {i: "15GiB" for i in range(6)}
 # --------------------------- Safe writer ---------------------------
 
 def _append_jsonl_safely(path, records):
@@ -80,20 +82,17 @@ def main():
     #     TEACHER_PROMPT = TEACHER_PROMPT_ITER1
 
     # load the tokenizer and the model
-    print("Using ", MODEL_NAME, "model")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-#     model = AutoModelForCausalLM.from_pretrained(
-#         MODEL_NAME,
-#         torch_dtype="auto",
-#         device_map="auto"
-# )
+    # print("Using ", MODEL_NAME, "model")
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    torch_dtype=torch.bfloat16,
+    device_map="auto",
+    max_memory=max_mem,
+    trust_remote_code=True,
+    low_cpu_mem_usage=True
+)
         
-    # before generate()
-    # bad_words = [
-    #     "Okay", "okay", "Wait", "wait", "Let's", "let's", "Hmm", "hmm"
-    # ]
-    # bad_words_ids = [tokenizer.encode(w, add_special_tokens=False) for w in bad_words]
-
     # Prepare output file (rotate if exists)
     out_path = args.output
     if os.path.exists(out_path):
@@ -131,24 +130,18 @@ def main():
             prompt = build_teacher_prompt_iter0(problem_text, tokenizer)
             print(prompt)
 
-            # # Tokenize and generate
-            # inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-            # with torch.no_grad():
-            #     output_ids = model.generate(
-            #         **inputs,
-            #         max_new_tokens=512,
-            #         do_sample=False,  # deterministic
-            #         eos_token_id=tokenizer.eos_token_id,
-            #         pad_token_id=tokenizer.eos_token_id,
-            #         no_repeat_ngram_size=4,
-            #         bad_words_ids=bad_words_ids,   
-            #     )
-            # response = tokenizer.decode(
-            #     output_ids[0][inputs["input_ids"].shape[1]:],
-            #     skip_special_tokens=True
-            # )
-            fake_response = example.get("solution","").strip()
-            response = fake_response
+            # Tokenize and generate
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                output_ids = model.generate(
+                    **inputs,
+                    max_new_tokens=512,
+                    do_sample=False,  # deterministic
+                )
+            response = tokenizer.decode(
+                output_ids[0][inputs["input_ids"].shape[1]:],
+                skip_special_tokens=True
+            )
             print("=========RESPONSE=============")
             print(response)
             # Evaluate response
@@ -164,13 +157,12 @@ def main():
                     "gt": gt,
                     
                 }])
-            sleep(15)
-            # break
+
 
     finally:
         # Ensure a last push happens even on normal completion
         print("[Main] Finalizing...")
-        # pusher.stop_and_final_push()
+        pusher.stop_and_final_push()
 
 if __name__ == "__main__":
     main()
