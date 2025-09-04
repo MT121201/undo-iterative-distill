@@ -23,32 +23,32 @@ Our implementation follows two goals:
 
 ---
 
-## 🔄 Updates
+##  Updates
 
 * **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
-* **2025/09/03** – Teacher model **QWEN3-30B-A3B** running to generate the first distilled dataset (\~160 GPU hours). Progress: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
+* **2025/09/03** – Teacher model **QWEN3-30B-A3B** running to generate the first distilled dataset on 10k samples (\~160 GPU hours). Progress: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
 
 ---
 
-## ✅ Progress Checklist
+## Progress Checklist
 
 | Status | Task                                    |
 | ------ | --------------------------------------- |
 | ✔️     | Prepare training dataset                |
 | ✔️     | Implement teacher model (1st iteration) |
 | ✔️     | Evaluation method for teacher responses |
-| ✔️     | Prompt design for concise reasoning     |
-| ⏳      | Generate 1st teacher-distilled dataset  |
+| ✔️     | Prompt teacher model for good answers   |
+| In Progress      | Generate 1st teacher-distilled dataset  |
 | ⬜      | Implement student model                 |
 | ⬜      | Train student on distilled dataset      |
 | ⬜      | Validate student model                  |
 | ⬜      | Generate 2nd iteration dataset          |
-| ⬜      | Train student (iteration 2)             |
-| ⬜      | … continue iterative refinement         |
+| ⬜      | ...         |
+
 
 ---
 
-## 📊 Datasets
+##  Datasets
 
 | Type               | Name                              | Link                                                                             |
 | ------------------ | --------------------------------- | -------------------------------------------------------------------------------- |
@@ -68,7 +68,7 @@ Our implementation follows two goals:
 
 | Model         | Recommended VRAM | Current Setup               | Platform | Notes                            |
 | ------------- | ---------------- | --------------------------- | -------- | -------------------------------- |
-| QWEN3-30B-A3B | 96 GB            | 6× RTX 5060 Ti (16 GB) | GPU2     | \~4× RTX 3090 (24 GB) equivalent |
+| QWEN3-30B-A3B | 96 GB            | 6× RTX 5060 Ti (16 GB)     | GPU2     | \~4× RTX 3090 (24 GB) equivalent |
 
 ---
 

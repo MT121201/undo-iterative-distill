@@ -212,3 +212,6 @@ NuminaMath-CoT-100k/
 
 #draft
 draft.py
+
+# dataset generation
+QWEN3_30B_10k_Iter0.jsonl
