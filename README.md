@@ -25,8 +25,8 @@ Our implementation follows two goals:
 
 ##  Updates
 
-* **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
 * **2025/09/03** – Teacher model **QWEN3-30B-A3B** running to generate the first distilled dataset on 10k samples (\~160 GPU hours). Progress: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
+* **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
 
 ---
 
