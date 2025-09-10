@@ -10,7 +10,7 @@ from src.evaluate import (
     _first_letter_choice,
     _first_numeric_fraction,
     _first_pm,
-    evaluate_teacher_response,
+    evaluate_model_response,
 )
 
 from src.utils import (

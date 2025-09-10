@@ -37,3 +37,19 @@ For saving GPU memory, install the following package for
 ```bash
 pip install flash-attn --no-build-isolation
 ```
+
+## Student Model Qwen2.5-1.5B
+```bash
+conda create -n student python=3.10 -y
+conda activate student
+```
+Installation of dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+### HF token
+For pushing to Hugging Face
+```bash
+export HF_TOKEN="your_huggingface_token"
+```

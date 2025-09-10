@@ -11,7 +11,7 @@ from string import Template
 from time import sleep
 
 # from prompt.teacher_prompt import TEACHER_PROMPT_ITER0, TEACHER_PROMPT_ITER1
-from evaluate import evaluate_teacher_response
+from evaluate import evaluate_model_response
 from prompt.teacher_prompt import build_teacher_prompt_iter0
 from utils import HFPusher
 
@@ -73,16 +73,6 @@ def main():
     if args.cont is not None:
         dataset = dataset.select([i for i in range(args.cont, len(dataset))])
 
-    # # Load prompts
-    # if args.iter == "0":
-    #     print("Using Iteration 0 Prompt")
-    #     TEACHER_PROMPT = TEACHER_PROMPT_ITER0
-    # else:
-    #     print("Using Iteration 1+ Prompt")
-    #     TEACHER_PROMPT = TEACHER_PROMPT_ITER1
-
-    # load the tokenizer and the model
-    # print("Using ", MODEL_NAME, "model")
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
     model_id,
@@ -128,7 +118,7 @@ def main():
             # Check if GT have boxed, if not pass this sample
             solution_text = example.get("solution", "").strip()
             fake_response = r"\boxed{4}"
-            fake_result = evaluate_teacher_response(solution_text, fake_response)
+            fake_result = evaluate_model_response(solution_text, fake_response)
             if not fake_result.get("has_boxed"):
                 continue
 
@@ -158,7 +148,7 @@ def main():
             print(response)
             # Evaluate response
             gt = example.get("answer") or example.get("output") or example.get("gt") or example.get("solution")
-            results = evaluate_teacher_response(response, gt)
+            results = evaluate_model_response(response, gt)
             print("=========EVALUATION=============")
             print(results)
             if results.get("has_boxed") and results.get("is_correct"):

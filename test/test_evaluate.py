@@ -13,7 +13,7 @@ from src.evaluate import (
     _first_letter_choice,
     _first_numeric_fraction,
     _first_pm,
-    evaluate_teacher_response,
+    evaluate_model_response,
 )
 
 # -----------------------------
@@ -173,80 +173,80 @@ def test_first_pm(tokens, expected):
     assert _first_pm(tokens) == expected
 
 # -----------------------------
-# evaluate_teacher_response
+# evaluate_model_response
 # -----------------------------
-def test_evaluate_teacher_response_numeric():
+def test_evaluate_model_response_numeric():
     resp = r"Here is the answer: \boxed{42}"
     exp = r"\boxed{42}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["is_correct"] is True
     assert result["comparison_mode"] == "numeric"
 
-def test_evaluate_teacher_response_numeric_fraction():
+def test_evaluate_model_response_numeric_fraction():
     resp = r"\boxed{\frac{1}{2}}"
     exp = r"\boxed{0.5}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["is_correct"] is True
 
-def test_evaluate_teacher_response_letter_choice():
+def test_evaluate_model_response_letter_choice():
     resp = r"\boxed{(C)}"
     exp = r"\boxed{C}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["is_correct"] is True
     assert result["comparison_mode"] == "choice"
 
-def test_evaluate_teacher_response_pm():
+def test_evaluate_model_response_pm():
     resp = r"\boxed{±3}"
     exp = r"\boxed{3}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["is_correct"] is True
     assert result["comparison_mode"] == "pm"
 
-def test_evaluate_teacher_response_no_boxed():
+def test_evaluate_model_response_no_boxed():
     resp = "No box here"
-    result = evaluate_teacher_response(resp)
+    result = evaluate_model_response(resp)
     assert result["has_boxed"] is False
     assert result["extracted_answer"] is None
 
-def test_evaluate_teacher_response_string_fallback():
+def test_evaluate_model_response_string_fallback():
     resp = r"\boxed{foo bar}"
     exp = r"\boxed{foo bar}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["is_correct"] is True
     assert result["comparison_mode"] == "string"
 
-def test_evaluate_teacher_response_circled():
+def test_evaluate_model_response_circled():
     resp = r"\boxed{④}"
     exp = r"\boxed{4}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"]
     assert result["is_correct"]
 
-def test_evaluate_teacher_response_currency():
+def test_evaluate_model_response_currency():
     resp = r"\boxed{\$280}"
     exp = r"\boxed{280}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["is_correct"]
     assert result["comparison_mode"] == "numeric"
 
-def test_evaluate_teacher_response_pm_reverse():
+def test_evaluate_model_response_pm_reverse():
     resp = r"\boxed{3}"
     exp = r"\boxed{±3}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["is_correct"]
 
-def test_evaluate_teacher_response_empty_box():
+def test_evaluate_model_response_empty_box():
     resp = r"\boxed{}"
-    result = evaluate_teacher_response(resp)
+    result = evaluate_model_response(resp)
     assert result["has_boxed"]
     assert result["extracted_answer"] == ""
 
-def test_evaluate_teacher_response_decimal():
+def test_evaluate_model_response_decimal():
     resp = r"""
     First, calculate the total number of children across all families:
     \[ 9 \times 3 = 27 \text{ children total.} \]
@@ -260,17 +260,17 @@ def test_evaluate_teacher_response_decimal():
     Thus, the average number of children in the families with children is $\boxed{4.5}$.
     """
     exp = r"\boxed{4.5}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["extracted_answer"] == "4.5"
     assert result["is_correct"] is True
     assert result["comparison_mode"] == "numeric"
 
-def test_evaluate_teacher_response_factorial_string():
+def test_evaluate_model_response_factorial_string():
     # Both sides provide factorial symbolically
     resp = r"… therefore x is $\boxed{13!}$."
     exp  = r"\boxed{13!}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["extracted_answer"] in ("13!", r"13!")  # depending on wrappers
     # With both boxed strings equal after normalization
@@ -278,20 +278,20 @@ def test_evaluate_teacher_response_factorial_string():
     assert result["comparison_mode"] in ( "numeric", "string")  # could be string if you don't coerce both
     # If your tokenizer yields numeric (after factorial patch), it will be numeric.
 
-def test_evaluate_teacher_response_factorial_numeric_equivalence():
+def test_evaluate_model_response_factorial_numeric_equivalence():
     # One side symbolic factorial, other side numeric 13! = 6227020800
     resp = r"\boxed{13!}"
     exp  = r"\boxed{6227020800}"
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["is_correct"] is True
     assert result["comparison_mode"] == "numeric"
 
-def test_evaluate_teacher_response_non_numeric_string_fallback():
+def test_evaluate_model_response_non_numeric_string_fallback():
     # If expected is a narrative (no boxed / no numeric), we fall back to string compare of cleaned inners
     resp = r"\boxed{13!}"
     exp  = r"The value is \boxed{13!} given the setup."
-    result = evaluate_teacher_response(resp, exp)
+    result = evaluate_model_response(resp, exp)
     assert result["has_boxed"] is True
     assert result["comparison_mode"] in ("numeric", "string")
     assert result["is_correct"] is True
@@ -300,7 +300,7 @@ def test_evaluate_teacher_response_non_numeric_string_fallback():
 def test_choice_simple_B():
     resp = r"The ratio of height to base ... The final answer is $\boxed{B}$."
     exp  = r"\boxed{B}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "choice"
@@ -311,7 +311,7 @@ def test_empty_box_inside_display_math():
     \boxed{}
     \]
     """
-    out = evaluate_teacher_response(resp)  # no expected
+    out = evaluate_model_response(resp)  # no expected
     assert out["has_boxed"] is True
     # Empty box -> extracted_answer should be empty string after cleaning
     assert out["extracted_answer"] in ("",)  # tolerate empty
@@ -320,7 +320,7 @@ def test_empty_box_inside_display_math():
 def test_interval_string_compare():
     resp = r"\[ x \in \boxed{(0.25, 0.5)} \]"
     exp  = r"\boxed{(0.25, 0.5)}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "string"
@@ -328,7 +328,7 @@ def test_interval_string_compare():
 def test_list_of_numbers_string_compare():
     resp = r"This equation ... Therefore ... $\boxed{-3, -1, 1}$."
     exp  = r"\boxed{-3, -1, 1}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     # Lists aren't parsed as a single numeric -> should fall back to string
@@ -337,7 +337,7 @@ def test_list_of_numbers_string_compare():
 def test_choice_with_textbf_and_surrounding_math():
     resp = r"- The correct length of \(BC\) is \(2\sqrt{43}\). The final answer is $\boxed{\(\textbf{(B)}\ 2\sqrt{43}\)}$"
     exp  = r"\boxed{B}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "choice"
@@ -345,7 +345,7 @@ def test_choice_with_textbf_and_surrounding_math():
 def test_pm_against_positive_value():
     resp = r"Therefore, the answer is: $\boxed{\pm3}$."
     exp  = r"\boxed{3}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "pm"
@@ -359,7 +359,7 @@ def test_numeric_choice_combo_13():
     The final answer is $\boxed{\textbf{(D)} \: 13}$
     """
     exp  = r"\boxed{13}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     # Our evaluator prioritizes numeric over choice when both exist
@@ -368,19 +368,19 @@ def test_numeric_choice_combo_13():
 def test_degrees_cleaning():
     resp = r"So, the values are $B=\boxed{60^{\circ}}$, $C=\boxed{90^{\circ}}$, and $a=\boxed{\sqrt{3}}$."
     # Check degree normalization -> numeric compare for 60 and 90; sqrt(3) remains string
-    outB = evaluate_teacher_response(r"$\boxed{60^{\circ}}$", r"\boxed{60}")
+    outB = evaluate_model_response(r"$\boxed{60^{\circ}}$", r"\boxed{60}")
     assert outB["has_boxed"] is True and outB["is_correct"] is True and outB["comparison_mode"] == "numeric"
 
-    outC = evaluate_teacher_response(r"$\boxed{90^{\circ}}$", r"\boxed{90}")
+    outC = evaluate_model_response(r"$\boxed{90^{\circ}}$", r"\boxed{90}")
     assert outC["has_boxed"] is True and outC["is_correct"] is True and outC["comparison_mode"] == "numeric"
 
-    outa = evaluate_teacher_response(r"$\boxed{\sqrt{3}}$", r"\boxed{\sqrt{3}}")
+    outa = evaluate_model_response(r"$\boxed{\sqrt{3}}$", r"\boxed{\sqrt{3}}")
     assert outa["has_boxed"] is True and outa["is_correct"] is True and outa["comparison_mode"] == "string"
 
 def test_circled_numeral_choice():
     resp = r"In summary, only $④$ is correct. Hence, the answer is: $\boxed{④}$."
     exp  = r"\boxed{4}"
-    out = evaluate_teacher_response(resp, exp)
+    out = evaluate_model_response(resp, exp)
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     # mapped to '4' then parsed as numeric
@@ -392,49 +392,49 @@ def _wrap(resp: str) -> str:
 
 def test_choice_simple_B_split():
     resp = _wrap(r"The final answer is $\boxed{B}$.")
-    out = evaluate_teacher_response(resp, r"\boxed{B}")
+    out = evaluate_model_response(resp, r"\boxed{B}")
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "choice"
 
 def test_empty_box_split():
     resp = _wrap(r"\[\boxed{}\]")
-    out = evaluate_teacher_response(resp)  # no expected
+    out = evaluate_model_response(resp)  # no expected
     assert out["has_boxed"] is True
     assert out["extracted_answer"] in ("",)
     assert out["is_correct"] is None
 
 def test_interval_string_compare_split():
     resp = _wrap(r"\[ x \in \boxed{(0.25, 0.5)} \]")
-    out  = evaluate_teacher_response(resp, r"\boxed{(0.25, 0.5)}")
+    out  = evaluate_model_response(resp, r"\boxed{(0.25, 0.5)}")
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "string"
 
 def test_list_of_numbers_string_compare_split():
     resp = _wrap(r"This … $\boxed{-3, -1, 1}$.")
-    out  = evaluate_teacher_response(resp, r"\boxed{-3, -1, 1}")
+    out  = evaluate_model_response(resp, r"\boxed{-3, -1, 1}")
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "string"
 
 def test_choice_with_textbf_and_surrounding_math_split():
     resp = _wrap(r"The final answer is $\boxed{\(\textbf{(B)}\ 2\sqrt{43}\)}$")
-    out  = evaluate_teacher_response(resp, r"\boxed{B}")
+    out  = evaluate_model_response(resp, r"\boxed{B}")
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "choice"
 
 def test_pm_against_positive_value_split():
     resp = _wrap(r"Therefore, the answer is: $\boxed{\pm3}$.")
-    out  = evaluate_teacher_response(resp, r"\boxed{3}")
+    out  = evaluate_model_response(resp, r"\boxed{3}")
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     assert out["comparison_mode"] == "pm"
 
 def test_numeric_choice_combo_13_split():
     resp = _wrap(r"The final answer is $\boxed{\textbf{(D)} \: 13}$")
-    out  = evaluate_teacher_response(resp, r"\boxed{13}")
+    out  = evaluate_model_response(resp, r"\boxed{13}")
     assert out["has_boxed"] is True
     assert out["is_correct"] is True
     # numeric should win if both numeric and choice present
@@ -442,28 +442,28 @@ def test_numeric_choice_combo_13_split():
 
 def test_degrees_cleaning_60_split():
     resp = _wrap(r"$\boxed{60^{\circ}}$")
-    out  = evaluate_teacher_response(resp, r"\boxed{60}")
+    out  = evaluate_model_response(resp, r"\boxed{60}")
     assert out["has_boxed"] and out["is_correct"] and out["comparison_mode"] == "numeric"
 
 def test_degrees_cleaning_90_split():
     resp = _wrap(r"$\boxed{90^{\circ}}$")
-    out  = evaluate_teacher_response(resp, r"\boxed{90}")
+    out  = evaluate_model_response(resp, r"\boxed{90}")
     assert out["has_boxed"] and out["is_correct"] and out["comparison_mode"] == "numeric"
 
 def test_sqrt3_string_split():
     resp = _wrap(r"$\boxed{\sqrt{3}}$")
-    out  = evaluate_teacher_response(resp, r"\boxed{\sqrt{3}}")
+    out  = evaluate_model_response(resp, r"\boxed{\sqrt{3}}")
     assert out["has_boxed"] and out["is_correct"] and out["comparison_mode"] == "string"
 
 def test_circled_numeral_split():
     resp = _wrap(r"Hence, the answer is: $\boxed{④}$.")
-    out  = evaluate_teacher_response(resp, r"\boxed{4}")
+    out  = evaluate_model_response(resp, r"\boxed{4}")
     assert out["has_boxed"] and out["is_correct"]
     assert out["comparison_mode"] in ("numeric", "string")  # either acceptable
 
 def test_final_primes_list_split():
     resp = _wrap(r"\[\boxed{2, 3, 5, 7, 13}\]")
-    out  = evaluate_teacher_response(resp, r"\boxed{2, 3, 5, 7, 13}")
+    out  = evaluate_model_response(resp, r"\boxed{2, 3, 5, 7, 13}")
     assert out["has_boxed"] is True
     assert out["extracted_answer"] == "2, 3, 5, 7, 13"
     assert out["is_correct"] is True
@@ -516,41 +516,41 @@ def test_final_primes_list_split():
         (r"\boxed{\sqrt{3}}", r"\boxed{\sqrt{3}}", {"is_correct": True, "comparison_mode": "string"}),
     ]
 )
-def test_evaluate_teacher_response_cases(response, expected, expected_result):
-    result = evaluate_teacher_response(response, expected)
+def test_evaluate_model_response_cases(response, expected, expected_result):
+    result = evaluate_model_response(response, expected)
     for key, val in expected_result.items():
         assert result[key] == val
 
-def test_evaluate_teacher_response_numeric_tolerance():
+def test_evaluate_model_response_numeric_tolerance():
     # Should be correct within tolerance
     resp = r"\boxed{1.000000001}"
     exp = r"\boxed{1.0}"
-    result = evaluate_teacher_response(resp, exp, numeric_tolerance=1e-8)
+    result = evaluate_model_response(resp, exp, numeric_tolerance=1e-8)
     assert result["is_correct"] is True
     # Should be incorrect if outside tolerance
-    result = evaluate_teacher_response(resp, exp, numeric_tolerance=1e-10)
+    result = evaluate_model_response(resp, exp, numeric_tolerance=1e-10)
     assert result["is_correct"] is False
 
-def test_evaluate_teacher_response_pm_extraction_only():
+def test_evaluate_model_response_pm_extraction_only():
     # Only extraction, no expected
     resp = r"\boxed{±7}"
-    result = evaluate_teacher_response(resp)
+    result = evaluate_model_response(resp)
     assert result["has_boxed"] is True
     assert result["extracted_answer"] == "±7.0"
     assert result["comparison_mode"] == "pm"
     assert result["is_correct"] is None
 
-def test_evaluate_teacher_response_letter_choice_extraction_only():
+def test_evaluate_model_response_letter_choice_extraction_only():
     resp = r"\boxed{(D)}"
-    result = evaluate_teacher_response(resp)
+    result = evaluate_model_response(resp)
     assert result["has_boxed"] is True
     assert result["extracted_answer"] == "D"
     assert result["comparison_mode"] == "choice"
     assert result["is_correct"] is None
 
-def test_evaluate_teacher_response_string_extraction_only():
+def test_evaluate_model_response_string_extraction_only():
     resp = r"\boxed{foo bar}"
-    result = evaluate_teacher_response(resp)
+    result = evaluate_model_response(resp)
     assert result["has_boxed"] is True
     assert result["extracted_answer"] == "foo bar"
     assert result["comparison_mode"] is None

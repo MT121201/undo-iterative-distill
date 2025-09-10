@@ -295,7 +295,7 @@ def _looks_like_list(expr: str) -> bool:
 # -----------------------------
 # Public APIs
 # -----------------------------
-def evaluate_teacher_response(
+def evaluate_model_response(
     response: str,
     expected: Optional[str] = None,
     numeric_tolerance: float = 1e-9,
@@ -531,8 +531,8 @@ def evaluate_teacher_response(
 
 if __name__ == "__main__":
     # pass_response = r"$\boxed{\pm3}$"
-    # print(evaluate_teacher_response(response=pass_response, expected="±3"))
+    # print(evaluate_model_response(response=pass_response, expected="±3"))
     # debug = r"\boxed{\frac{1}{2}}"
-    # print(evaluate_teacher_response(response=debug, expected=r"\boxed{0.5}"))
+    # print(evaluate_model_response(response=debug, expected=r"\boxed{0.5}"))
     pass
     
