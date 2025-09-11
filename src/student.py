@@ -200,7 +200,8 @@ def main():
     args = parser.parse_args()
 
     # Load dataset (no fixed split, always manual)
-    ds = load_dataset(args.dataset, split="train")
+    split = "train" if args.mode == "train" else "test"
+    ds = load_dataset(args.dataset, split=split)
     print(f"Loaded dataset {args.dataset} with {len(ds)} samples")
 
     # Load model/tokenizer

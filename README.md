@@ -49,7 +49,14 @@ Our implementation follows two goals:
 
 
 ---
-
+## Student Evaluation Results
+| Model      | Iteration | Math500 | GSM8K* | MLU_PRO* | SVAMP* |
+| ---------- | --------- | ------- | ------ | -------- | ------ |
+| QWEN2.5 1.5B | 0         | -   | -  | -    | -  |
+| QWEN2.5 1.5B | 1         | -   | -  | -    | -  |
+| QWEN2.5 1.5B | 2         | -   | -  | -    | -  |
+| QWEN2.5 1.5B | 3         | -   | -  | -    | -  |
+---
 ##  Datasets
 
 | Type               | Name                              | Link                                                                             | # Samples |
