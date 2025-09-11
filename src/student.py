@@ -30,7 +30,7 @@ from utils import HFPusher
 # - System prompt: ALWAYS place final answer as:  Final Answer: \\boxed{<answer>}
 # ================================================================
 
-MODEL_ID = "Qwen/Qwen2.5-Math-1.5B"
+MODEL_ID = "Qwen/Qwen2.5-Math-1.5B-Instruct"
 SYS_PROMPT = (
     "You are a precise math problem solver. Work step by step where helpful, "
     "and ALWAYS present the final result on the last line as: Final Answer: \\boxed{<answer>}"
@@ -92,26 +92,53 @@ class ChatSFTBuilder:
 
 # --------------------------- Inference + Eval ---------------------------
 
-def run_inference_and_eval(model, tokenizer, dataset, max_new_tokens=256, save_jsonl: Optional[str] = None) -> Dict[str, Any]:
+def run_inference_and_eval(model, tokenizer, dataset, max_new_tokens=256, debug_mode=False, save_jsonl: Optional[str] = None) -> Dict[str, Any]:
     total, correct = 0, 0
     records: List[Dict[str, Any]] = []
     for idx, ex in enumerate(dataset):
-        problem = str(ex.get("problem", "")).strip()
+        problem = str(ex.get("question", ex.get("problem", ""))).strip()
         if not problem:
+            if debug_mode and idx < 3:
+                print(f"--- Example {idx} ---")
+                print("Empty problem, skipping.")
+                print("-" * 20)
             continue
         gt = get_gt(ex)
         messages = build_messages(problem)
-        inputs = tokenizer.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=True,
+        prompt_show = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False
+        )
+        if debug_mode and idx < 3:
+            print(f"--- Example {idx} ---")
+            print("Prompt :", prompt_show)
+            print("GT     :", gt)
+
+        inputs = tokenizer(
+            prompt_show,
             return_tensors="pt",
+            return_token_type_ids=False,
         ).to(model.device)
+
+        gen_kwargs = dict(
+            max_new_tokens=max_new_tokens,
+            do_sample=False,                 # deterministic (helps stability)
+            temperature=None, top_p=None,    # keep sampling OFF
+            eos_token_id=tokenizer.eos_token_id,
+            pad_token_id=tokenizer.pad_token_id,
+        )
+
         with torch.no_grad():
-            out = model.generate(**inputs, max_new_tokens=max_new_tokens)
-        pred = tokenizer.decode(out[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+            out = model.generate(**inputs, **gen_kwargs)
+        input_len = inputs["input_ids"].shape[-1]
+        pred = tokenizer.decode(out[0][input_len:], skip_special_tokens=True)
+        if debug_mode and idx < 3:
+            print("Pred   :", pred)
+            print()
 
         eval_res = evaluate_model_response(pred, gt)
+        if debug_mode and idx < 3:
+            print("Eval   :", eval_res)
+            print("-" * 20)
         is_ok = bool(eval_res.get("is_correct", False))
         total += 1
         correct += int(is_ok)
@@ -197,17 +224,23 @@ def main():
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--save_dir", default="./student_ckpt")
 
+    # DEBUG
+    parser.add_argument("--debug_mode", type=bool, default=False)
     args = parser.parse_args()
 
     # Load dataset (no fixed split, always manual)
     split = "train" if args.mode == "train" else "test"
     ds = load_dataset(args.dataset, split=split)
     print(f"Loaded dataset {args.dataset} with {len(ds)} samples")
-
+    debug_mode = bool(args.debug_mode)
+    print("Debug mode:", debug_mode)
     # Load model/tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID,
+                                              trust_remote_code=True,
+                                              use_fast=False)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
+        trust_remote_code=True,
         torch_dtype=torch.bfloat16 if torch.cuda.is_available() else None,
         device_map="auto",
         low_cpu_mem_usage=True,
@@ -215,7 +248,10 @@ def main():
 
     if args.mode == "test":
         # Inference + evaluation (optionally save jsonl)
-        metrics = run_inference_and_eval(model, tokenizer, ds, save_jsonl=args.output)
+        model.eval()
+        if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
+            tokenizer.pad_token = tokenizer.eos_token
+        metrics = run_inference_and_eval(model, tokenizer, ds, debug_mode=debug_mode, save_jsonl=args.output)
         print(json.dumps({"metrics": metrics}, indent=2))
         return
 
