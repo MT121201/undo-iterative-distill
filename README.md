@@ -24,7 +24,8 @@ Our implementation follows two goals:
 ---
 
 ##  Updates
-
+* **2025/09/11** – Added test script for student model [code](src/student.py), see **Running** section below. Finetune code is under development.
+* **2025/09/10** – Test datasets is ready, see **Datasets** section below.
 * **2025/09/03** – Teacher model **QWEN3-30B-A3B** running to generate the first distilled dataset on 10k samples (\~160 GPU hours). Progress: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
 * **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
 
@@ -58,7 +59,7 @@ Our implementation follows two goals:
 |                     | 2         | -       | -      | -        | -      |
 |                     | 3         | -       | -      | -        | -      |
 ---
-*: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).	
+*: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).
 
 **: MLU_PRO math subset only.
 ##  Datasets
@@ -129,7 +130,7 @@ Fine-tune the student model on a Hugging Face dataset that contains `problem`, `
 
 
 ```bash
-python student.py \
+python src/student.py \
 --mode train \
 --dataset MinTR_KIEU/NuminaMath-CoT-10k \
 --output runs/student_train_preds.jsonl \
@@ -164,7 +165,7 @@ Evaluate the student model on a dataset with `problem` and `gt` fields:
 
 
 ```bash
-python student.py \
+python src/student.py \
 --mode test \
 --dataset MinTR_KIEU/MMLU_PRO_math_test \
 --output runs/student_test_preds.jsonl
