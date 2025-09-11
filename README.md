@@ -81,6 +81,7 @@ See [doc/installation.md](doc/installation.md) for detailed setup instructions.
 ---
 
 ## 🚀 Running
+**NOTE**: This currently messy because now build and test code phase, later will use .sh files to run the experiments.
 
 ### Teacher Inference
 
@@ -111,6 +112,61 @@ Parameters:
 * `--hf_private` : 0 = public, 1 = private.
 * `--push_every_min` : Auto-push interval (0 = disabled).
 
+
+### Student Training
+Fine-tune the student model on a Hugging Face dataset that contains `problem`, `teacher_solution`, and `gt` fields:
+
+
+```bash
+python student.py \
+--mode train \
+--dataset MinTR_KIEU/NuminaMath-CoT-10k \
+--output runs/student_train_preds.jsonl \
+--hf_repo your-username/undo-student-outputs \
+--hf_path_in_repo data/student_train_preds.jsonl \
+--push_every_min 30 \
+--hf_private 1 \
+--train_epochs 1 \
+--per_device_train_batch_size 2 \
+--gradient_accumulation_steps 8 \
+--lr 2e-5 \
+--save_dir ./student_ckpt \
+--hf_save 1 \
+--hf_model_repo your-username/qwen2.5-math-student \
+--hf_model_private 1
+```
+
+
+This will:
+- Train the model for 1 epoch using `teacher_solution` as the target.
+- Save checkpoints to `./student_ckpt`.
+- Write a JSONL file of `{problem, teacher_solution, student_solution, gt}` to `runs/student_train_preds.jsonl`.
+- Push the dataset JSONL to the HF Hub every 30 minutes.
+- Push the fine-tuned model weights to your HF repo at the end.
+
+
+---
+
+
+### Student Testing
+Evaluate the student model on a dataset with `problem` and `gt` fields:
+
+
+```bash
+python student.py \
+--mode test \
+--dataset MinTR_KIEU/MMLU_PRO_math_test \
+--output runs/student_test_preds.jsonl
+```
+
+
+This will:
+- Run inference on the dataset.
+- Evaluate accuracy using `evaluate_model_response`.
+- Save predictions and evaluation results to `runs/student_test_preds.jsonl`.
+
+
+---
 ---
 
 ## 📝 Notes for Reproduction

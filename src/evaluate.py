@@ -530,9 +530,8 @@ def evaluate_model_response(
 
 
 if __name__ == "__main__":
-    # pass_response = r"$\boxed{\pm3}$"
-    # print(evaluate_model_response(response=pass_response, expected="±3"))
-    # debug = r"\boxed{\frac{1}{2}}"
-    # print(evaluate_model_response(response=debug, expected=r"\boxed{0.5}"))
-    pass
+
+    debug = r"It takes 2/2=<<2/2=1>>1 bolt of white fiber So the total amount of fabric is 2+1=<<2+1=3>>3 bolts of fabric $\boxed{3}$"
+    print(evaluate_model_response(response=debug, expected=r"\boxed{3}"))
+    # pass
     
