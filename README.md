@@ -51,17 +51,17 @@ Our implementation follows two goals:
 
 ##  Datasets
 
-| Type               | Name                              | Link                                                                             |
-| ------------------ | --------------------------------- | -------------------------------------------------------------------------------- |
-| Train              | NuminaMath-CoT-10k                | [link](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            |
-| Train              | NuminaMath-CoT-100k               | [link](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           |
-| Distilled (Iter 0) | Teacher\_CoT\_NuminaMath\_10k\_I0 | [link](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) |
-| Distilled (Iter 1) | –                                 | \[]                                                                              |
-| Distilled (Iter 2) | –                                 | \[]                                                                              |
-| Test               | Math500                           | [link](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                      |
-| Test               | GSM8K                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)                                                                              |
-| Test               | MMLU PRO                          | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)                                                                              |
-| Test               | SVAMP                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_SVAMP_boxed)                                                                             |
+| Type               | Name                              | Link                                                                             | # Samples |
+| ------------------ | --------------------------------- | -------------------------------------------------------------------------------- | --------- |
+| Train              | NuminaMath-CoT-10k                | [link](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            | 10,000    |
+| Train              | NuminaMath-CoT-100k               | [link](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           | 100,000   |
+| Distilled (Iter 0) | Teacher\_CoT\_NuminaMath\_10k\_I0 | [link](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) | 10,000    |
+| Distilled (Iter 1) | –                                 | \[]                                                                              | –         |
+| Distilled (Iter 2) | –                                 | \[]                                                                              | –         |
+| Test               | Math500                           | [link](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                   | 500       |
+| Test               | GSM8K                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)              | 1,300       |
+| Test               | MMLU PRO                          | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)      | 1,350     |
+| Test               | SVAMP                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_SVAMP_boxed)              | 300     |
 
 ---
 
