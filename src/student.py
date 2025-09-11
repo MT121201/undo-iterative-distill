@@ -17,6 +17,7 @@ from transformers import (
 # Use the SAME evaluator & pusher style as teacher
 from evaluate import evaluate_model_response
 from utils import HFPusher
+from tqdm import tqdm
 
 # ================================================================
 # Student model script (train / test) for math reasoning
@@ -92,65 +93,73 @@ class ChatSFTBuilder:
 
 # --------------------------- Inference + Eval ---------------------------
 
-def run_inference_and_eval(model, tokenizer, dataset, max_new_tokens=256, debug_mode=False, save_jsonl: Optional[str] = None) -> Dict[str, Any]:
+from tqdm import tqdm
+
+def run_inference_and_eval(model, tokenizer, dataset, max_new_tokens=256,
+                           debug_mode=False, save_jsonl: Optional[str] = None) -> Dict[str, Any]:
     total, correct = 0, 0
     records: List[Dict[str, Any]] = []
-    for idx, ex in enumerate(dataset):
-        problem = str(ex.get("question", ex.get("problem", ""))).strip()
-        if not problem:
+
+    with tqdm(total=len(dataset), desc="Inference & Eval") as pbar:
+        for idx, ex in enumerate(dataset):
+            problem = str(ex.get("question", ex.get("problem", ""))).strip()
+            if not problem:
+                if debug_mode and idx < 3:
+                    print(f"--- Example {idx} ---")
+                    print("Empty problem, skipping.")
+                    print("-" * 20)
+                pbar.update(1)
+                continue
+
+            gt = get_gt(ex)
+            messages = build_messages(problem)
+            prompt_show = tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True, tokenize=False
+            )
             if debug_mode and idx < 3:
                 print(f"--- Example {idx} ---")
-                print("Empty problem, skipping.")
-                print("-" * 20)
-            continue
-        gt = get_gt(ex)
-        messages = build_messages(problem)
-        prompt_show = tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, tokenize=False
-        )
-        if debug_mode and idx < 3:
-            print(f"--- Example {idx} ---")
-            print("Prompt :", prompt_show)
-            print("GT     :", gt)
+                print("Prompt:", prompt_show)
 
-        inputs = tokenizer(
-            prompt_show,
-            return_tensors="pt",
-            return_token_type_ids=False,
-        ).to(model.device)
+            inputs = tokenizer(
+                prompt_show,
+                return_tensors="pt",
+                return_token_type_ids=False,
+            ).to(model.device)
 
-        gen_kwargs = dict(
-            max_new_tokens=max_new_tokens,
-            do_sample=False,                 # deterministic (helps stability)
-            temperature=None, top_p=None,    # keep sampling OFF
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.pad_token_id,
-        )
+            gen_kwargs = dict(
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                temperature=None, top_p=None,
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.pad_token_id,
+            )
 
-        with torch.no_grad():
-            out = model.generate(**inputs, **gen_kwargs)
-        input_len = inputs["input_ids"].shape[-1]
-        pred = tokenizer.decode(out[0][input_len:], skip_special_tokens=True)
-        if debug_mode and idx < 3:
-            print("Pred   :", pred)
-            print()
+            with torch.no_grad():
+                out = model.generate(**inputs, **gen_kwargs)
+            input_len = inputs["input_ids"].shape[-1]
+            pred = tokenizer.decode(out[0][input_len:], skip_special_tokens=True)
 
-        eval_res = evaluate_model_response(pred, gt)
-        if debug_mode and idx < 3:
-            print("Eval   :", eval_res)
-            print("-" * 20)
-        is_ok = bool(eval_res.get("is_correct", False))
-        total += 1
-        correct += int(is_ok)
+            eval_res = evaluate_model_response(pred, gt)
+            if debug_mode and idx < 3:
+                print("Prediction:", pred)
+                print("Evaluation:", eval_res)
+            is_ok = bool(eval_res.get("is_correct", False))
+            total += 1
+            correct += int(is_ok)
 
-        rec = {
-            "idx": int(ex.get("idx", idx)),
-            "problem": problem,
-            "student_solution": pred,
-            "gt": gt,
-            "evaluation": eval_res,
-        }
-        records.append(rec)
+            rec = {
+                "idx": int(ex.get("idx", idx)),
+                "problem": problem,
+                "student_solution": pred,
+                "gt": gt,
+                "evaluation": eval_res,
+            }
+            records.append(rec)
+
+            # 🔑 update tqdm postfix with current accuracy
+            acc = correct / total if total else 0.0
+            pbar.set_postfix(acc=f"{acc:.3f}", correct=correct, total=total)
+            pbar.update(1)
 
     metrics = {"n": total, "acc": (correct / total if total else 0.0), "correct": correct}
     if save_jsonl:
@@ -158,8 +167,10 @@ def run_inference_and_eval(model, tokenizer, dataset, max_new_tokens=256, debug_
         with open(save_jsonl, "w", encoding="utf-8") as f:
             for r in records:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
     print("Evaluation:", json.dumps(metrics, indent=2))
     return metrics
+
 
 
 # --------------------------- Training ---------------------------
