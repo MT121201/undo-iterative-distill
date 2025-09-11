@@ -68,7 +68,7 @@ Our implementation follows two goals:
 | --------------------------------- | ------------------ | -------------------------------------------------------------------------------- | --------- |
 | NuminaMath-CoT-10k                | Train              | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            | 10,000    |
 | NuminaMath-CoT-100k               | Train              | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           | 100,000   |
-| Teacher\_CoT\_NuminaMath\_10k\_I0 | Distilled (Iter 0) | [HF](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) | 10,000    |
+| Teacher\_CoT\_NuminaMath\_10k\_I0 | Distilled (Iter 0) | [HF](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) | 4,000    |
 | –                                 | Distilled (Iter 1) | \[]                                                                              | –         |
 | –                                 | Distilled (Iter 2) | \[]                                                                              | –         |
 | Math500                           | Test               | [HF](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                   | 500       |
