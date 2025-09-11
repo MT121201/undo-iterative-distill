@@ -40,6 +40,7 @@ Our implementation follows two goals:
 | ✔️     | Prompt teacher model for good answers   |
 | ✔️       | Generate 1st teacher-distilled dataset  |
 | 60%      | Implement student model                 |
+| ✔️     | Prepare test datasets                |
 | ⬜      | Test student on Test datasets  #0         |
 | ⬜      | Train student on distilled dataset      |
 | ⬜      | Test student on Test datasets  #1        |
@@ -53,15 +54,15 @@ Our implementation follows two goals:
 
 | Type               | Name                              | Link                                                                             | # Samples |
 | ------------------ | --------------------------------- | -------------------------------------------------------------------------------- | --------- |
-| Train              | NuminaMath-CoT-10k                | [link](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            | 10,000    |
-| Train              | NuminaMath-CoT-100k               | [link](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           | 100,000   |
-| Distilled (Iter 0) | Teacher\_CoT\_NuminaMath\_10k\_I0 | [link](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) | 10,000    |
+| Train              | NuminaMath-CoT-10k                | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            | 10,000    |
+| Train              | NuminaMath-CoT-100k               | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           | 100,000   |
+| Distilled (Iter 0) | Teacher\_CoT\_NuminaMath\_10k\_I0 | [HF](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) | 10,000    |
 | Distilled (Iter 1) | –                                 | \[]                                                                              | –         |
 | Distilled (Iter 2) | –                                 | \[]                                                                              | –         |
-| Test               | Math500                           | [link](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                   | 500       |
-| Test               | GSM8K                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)              | 1,300       |
-| Test               | MMLU PRO                          | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)      | 1,350     |
-| Test               | SVAMP                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_SVAMP_boxed)              | 300     |
+| Test               | Math500                           | [HF](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                   | 500       |
+| Test               | GSM8K                             | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)              | 1,300       |
+| Test               | MMLU PRO                          | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)      | 1,350     |
+| Test               | SVAMP                             | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_SVAMP_boxed)              | 300     |
 
 ---
 
