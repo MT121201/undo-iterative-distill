@@ -58,8 +58,8 @@ Our implementation follows two goals:
 |                     | 2         | -       | -      | -        | -      |
 |                     | 3         | -       | -      | -        | -      |
 ---
-*: Datasets have been modified to match our evaluation format (final answer in $\boxed{...}$).	
-			
+*: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).	
+
 **: MLU_PRO math subset only.
 ##  Datasets
 
