@@ -38,10 +38,11 @@ Our implementation follows two goals:
 | ✔️     | Implement teacher model (1st iteration) |
 | ✔️     | Evaluation method for teacher responses |
 | ✔️     | Prompt teacher model for good answers   |
-| In Progress      | Generate 1st teacher-distilled dataset  |
-| ⬜      | Implement student model                 |
+| ✔️       | Generate 1st teacher-distilled dataset  |
+| 60%      | Implement student model                 |
+| ⬜      | Test student on Test datasets  #0         |
 | ⬜      | Train student on distilled dataset      |
-| ⬜      | Validate student model                  |
+| ⬜      | Test student on Test datasets  #1        |
 | ⬜      | Generate 2nd iteration dataset          |
 | ⬜      | ...         |
 
@@ -57,10 +58,10 @@ Our implementation follows two goals:
 | Distilled (Iter 0) | Teacher\_CoT\_NuminaMath\_10k\_I0 | [link](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) |
 | Distilled (Iter 1) | –                                 | \[]                                                                              |
 | Distilled (Iter 2) | –                                 | \[]                                                                              |
-| Test               | Math500                           | \[]                                                                              |
-| Test               | GSM8K                             | \[]                                                                              |
-| Test               | MMLU PRO                          | \[]                                                                              |
-| Test               | SVAMP                             | \[]                                                                              |
+| Test               | Math500                           | [link](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                      |
+| Test               | GSM8K                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)                                                                              |
+| Test               | MMLU PRO                          | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)                                                                              |
+| Test               | SVAMP                             | [link](https://huggingface.co/datasets/MinTR-KIEU/Test_SVAMP_boxed)                                                                             |
 
 ---
 
