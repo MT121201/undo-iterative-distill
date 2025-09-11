@@ -51,12 +51,14 @@ Our implementation follows two goals:
 ---
 ## Student Evaluation Results
 
-| Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MLU_PRO* | SVAMP* |
+| Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MLU_PRO** | SVAMP* |
 | ------------------- | --------- | ------- | ------ | -------- | ------ |
 |                     | 0         | -       | -      | -        | -      |
 |                     | 1         | -       | -      | -        | -      |
 |                     | 2         | -       | -      | -        | -      |
 |                     | 3         | -       | -      | -        | -      |
+*: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).
+**: MLU_PRO math subset only.
 ---
 ##  Datasets
 
