@@ -84,6 +84,7 @@ Our implementation follows two goals:
 | Model         | Recommended VRAM | Current Setup               | Platform | Notes                            |
 | ------------- | ---------------- | --------------------------- | -------- | -------------------------------- |
 | QWEN3-30B-A3B | 64 GB            | 6× RTX 5060 Ti (16 GB)     | GPU2     | \~4× RTX 3090 (24 GB) equivalent |
+| QWEN2.5 1.5B  | 8 GB           | 1× RTX 3090 Ti (24 GB)      | GPU2  | Eval Mode              |
 
 ---
 
