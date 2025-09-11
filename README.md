@@ -24,7 +24,7 @@ Our implementation follows two goals:
 ---
 
 ##  Updates
-* **2025/09/11** – Released initial [student test script](src/student.py); see **Running** for usage. Student finetuning code is in progress.
+* **2025/09/11** – Released initial [student test code](src/student.py); see **Running** for usage. Student finetuning code is in progress.
 * **2025/09/10** – All test datasets prepared; details in **Datasets** section.
 * **2025/09/08** – Teacher model **QWEN3-30B-A3B** finished generating the first distilled dataset (10k samples, ~160 GPU hours). Results: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
 * **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
