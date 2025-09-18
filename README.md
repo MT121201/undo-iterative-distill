@@ -52,9 +52,9 @@ Our implementation follows two goals:
 ---
 ## Student Evaluation Results
 
-| Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MLU_PRO** | SVAMP* |
+| Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MMLU_PRO** | SVAMP* |
 | ------------------- | --------- | ------- | ------ | -------- | ------ |
-|                     | 0         | -       | -      | -        | 75.79      |
+|                     | 0         | 9.6     | 31.16  | 13.76    | 75.79  |
 |                     | 1         | -       | -      | -        | -      |
 |                     | 2         | -       | -      | -        | -      |
 |                     | 3         | -       | -      | -        | -      |
