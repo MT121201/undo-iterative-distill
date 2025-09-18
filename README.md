@@ -40,10 +40,10 @@ Our implementation follows two goals:
 | ✔️     | Evaluation method for teacher responses |
 | ✔️     | Prompt teacher model for good answers   |
 | ✔️       | Generate 1st teacher-distilled dataset  |
-| 60%      | Implement student model                 |
+| ✔️      | Implement student model                 |
 | ✔️     | Prepare test datasets                |
-| ⬜      | Test student on Test datasets  #0         |
-| ⬜      | Train student on distilled dataset      |
+| ✔️      | Test student on Test datasets  #0         |
+| ✔️      | Train student on distilled dataset      |
 | ⬜      | Test student on Test datasets  #1        |
 | ⬜      | Generate 2nd iteration dataset          |
 | ⬜      | ...         |
@@ -85,7 +85,7 @@ Our implementation follows two goals:
 | ------------- | ---------------- | --------------------------- | -------- | -------------------------------- |
 | QWEN3-30B-A3B | 64 GB            | 6× RTX 5060 Ti (16 GB)     | GPU2     | \~4× RTX 3090 (24 GB) equivalent |
 | QWEN2.5 1.5B  | 8 GB           | 1× RTX 3090 Ti (24 GB)      | GPU2  | Eval Mode              |
-
+| QWEN2.5 1.5B  | 24 GB           | 2x RTX 3090 Ti (24 GB)      | GPU2  | Train Mode              |
 ---
 
 ## ⚙️ Installation
