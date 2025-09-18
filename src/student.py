@@ -175,17 +175,31 @@ def run_inference_and_eval(model, tokenizer, dataset, max_new_tokens=256,
 
 # --------------------------- Training ---------------------------
 
-def build_sft_dataset(train_ds, tokenizer):
+def build_sft_dataset(train_ds, tokenizer, max_length=2048):
     """SFT on teacher_solution only (ignore gt for loss)."""
-    builder = ChatSFTBuilder(tokenizer)
+    builder = ChatSFTBuilder(tokenizer, max_len=max_length)
 
     def _map_fn(ex):
         problem = str(ex.get("problem", "")).strip()
         target = str(ex.get("teacher_solution", "")).strip()
         if not target:
             target = "Final Answer: \\boxed{0}"  # fallback dummy
+
         enc = builder.build(problem, target)
-        return {"input_ids": enc.input_ids, "labels": enc.labels}
+
+        # ensure truncation first
+        input_ids = enc.input_ids[:max_length]
+        labels = enc.labels[:max_length]
+
+        # Now pad both to max_length
+        input_ids = input_ids + [tokenizer.pad_token_id] * (max_length - len(input_ids))
+        labels = labels + [-100] * (max_length - len(labels))
+
+        return {
+            "input_ids": input_ids,
+            "labels": labels,
+            "attention_mask": [1] * len(enc.input_ids) + [0] * (max_length - len(enc.input_ids)),
+        }
 
     cols = train_ds.column_names
     tokenized = train_ds.map(_map_fn, remove_columns=cols)
