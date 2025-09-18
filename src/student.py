@@ -230,6 +230,7 @@ def main():
     parser.add_argument("--mode", choices=["train", "test"], required=True)
     parser.add_argument("--dataset", required=True, help="HF dataset name, e.g. MinTR_KIEU/datasetname")
     parser.add_argument("--output", default=None, help="Path to save predictions/logs (train: student jsonl; test: optional)")
+    parser.add_argument("--model_path", default=MODEL_ID, help="Path to pretrained model (HF repo id or local directory)")
 
     # HF dataset push (like teacher)
     parser.add_argument("--hf_repo", default=None, help="HF dataset repo id to push JSONL (e.g., your-username/my-new-dataset)")
@@ -260,11 +261,11 @@ def main():
     debug_mode = bool(args.debug_mode)
     print("Debug mode:", debug_mode)
     # Load model/tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID,
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path,
                                               trust_remote_code=True,
                                               use_fast=False)
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
+        args.model_path,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16 if torch.cuda.is_available() else None,
         device_map="auto",

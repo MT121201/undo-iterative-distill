@@ -55,13 +55,15 @@ Our implementation follows two goals:
 | Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MMLU_PRO** | SVAMP* |
 | ------------------- | --------- | ------- | ------ | -------- | ------ |
 |                     | 0         | 9.6     | 31.16  | 13.76    | 75.79  |
-|                     | 1         | -       | -      | -        | -      |
+|                     | 1         | -       | -      | 14.53 (+0.77)        | 83.33 (+7.54)      |
 |                     | 2         | -       | -      | -        | -      |
 |                     | 3         | -       | -      | -        | -      |
+![vis](vis/student_vis.png)
 ---
 *: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).
 
 **: MLU_PRO math subset only.
+
 ##  Datasets
 
 | Name                              | Type               | Link                                                                             | # Samples |

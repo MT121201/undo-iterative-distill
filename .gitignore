@@ -215,3 +215,6 @@ draft.py
 
 # dataset generation
 QWEN3_30B_10k_Iter0.jsonl
+
+# ckpt
+student_ckpt/

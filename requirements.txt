@@ -12,3 +12,6 @@ huggingface_hub
 tqdm
 numpy
 pytest
+
+##
+matplotlib
