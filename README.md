@@ -58,8 +58,10 @@ Our implementation follows two goals:
 |                     | 1         | -       | -      | 14.53 (+0.77)        | 83.33 (+7.54)      |
 |                     | 2         | -       | -      | -        | -      |
 |                     | 3         | -       | -      | -        | -      |
-![vis](vis/student_vis.png)
+
 ---
+![vis](vis/student_vis.png)
+
 *: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).
 
 **: MLU_PRO math subset only.
