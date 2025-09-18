@@ -24,6 +24,8 @@ Our implementation follows two goals:
 ---
 
 ##  Updates
+* **2025/09/18** – Student finished finetune, ckp save at [MinTR-KIEU/qwen2.5-student-I1](https://huggingface.co/MinTR-KIEU/qwen2.5-student-I1). Test result being updated.
+* **2025/09/17** – Student finetuning code is working, student now being finetuned
 * **2025/09/11** – Released initial [student test code](src/student.py); see **Running** for usage. Student finetuning code is in progress.
 * **2025/09/10** – All test datasets prepared; details in **Datasets** section.
 * **2025/09/08** – Teacher model **QWEN3-30B-A3B** finished generating the first distilled dataset (10k samples, ~160 GPU hours). Results: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
