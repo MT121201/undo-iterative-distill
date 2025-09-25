@@ -6,10 +6,10 @@ import subprocess
 data = {
     "Qwen2.5-1.5B": {
         "Iteration": [0, 1, 2, 3],
-        "Math500": [9.6, None, None, None],
-        "GSM8K": [31.16,None, None, None],
-        "MMLU_PRO": [13.76, 14.53, None, None],
-        "SVAMP": [75.79, 83.33, None, None],
+        "Math500": [9.6, 32.4, 35.80, None],
+        "GSM8K": [31.16, 47.65, 54.22, None],
+        "MMLU_PRO": [13.76, 14.7, 15.32, None],
+        "SVAMP": [75.79, 83.33, 84.40, None],
     }
 }
 

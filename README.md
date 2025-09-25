@@ -24,11 +24,11 @@ Our implementation follows two goals:
 ---
 
 ##  Updates
-* **2025/09/18** – Student finished finetune, ckp save at [MinTR-KIEU/qwen2.5-student-I1](https://huggingface.co/MinTR-KIEU/qwen2.5-student-I1). Test result being updated.
+* **2025/09/25** – Student evaluation results for Iteration 2 are in! See **Student Evaluation Results** section.
 * **2025/09/17** – Student finetuning code is working, student now being finetuned
 * **2025/09/11** – Released initial [student test code](src/student.py); see **Running** for usage. Student finetuning code is in progress.
 * **2025/09/10** – All test datasets prepared; details in **Datasets** section.
-* **2025/09/08** – Teacher model **QWEN3-30B-A3B** finished generating the first distilled dataset (10k samples, ~160 GPU hours). Results: [Teacher\_CoT\_NuminaMath\_10k\_I0](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0)
+* **2025/09/08** – Teacher model **QWEN3-30B-A3B** finished generating the first distilled dataset (10k samples, ~160 GPU hours).
 * **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
 
 ---
@@ -46,8 +46,8 @@ Our implementation follows two goals:
 | ✔️     | Prepare test datasets                |
 | ✔️      | Test student on Test datasets  #0         |
 | ✔️      | Train student on distilled dataset      |
-| ⬜      | Test student on Test datasets  #1        |
-| ⬜      | Generate 2nd iteration dataset          |
+| ✔️      | Test student on Test datasets  #1        |
+| ✔️      | Continues 2nd iteration          |
 | ⬜      | ...         |
 
 
@@ -57,12 +57,14 @@ Our implementation follows two goals:
 | Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MMLU_PRO** | SVAMP* |
 | ------------------- | --------- | ------- | ------ | -------- | ------ |
 |                     | 0         | 9.6     | 31.16  | 13.76    | 75.79  |
-|                     | 1         | -       | -      | 14.53 (+0.77)        | 83.33 (+7.54)      |
-|                     | 2         | -       | -      | -        | -      |
+|                     | 1         | 32.4    | 47.65  | 14.53    | 83.33  |
+|                     | 2         | 35.80   | 54.22  | 15.32    | 84.40  |
 |                     | 3         | -       | -      | -        | -      |
 
 ---
 ![vis](vis/student_vis.png)
+
+**Iteration 0 = base model without finetuning**
 
 *: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).
 
@@ -74,9 +76,6 @@ Our implementation follows two goals:
 | --------------------------------- | ------------------ | -------------------------------------------------------------------------------- | --------- |
 | NuminaMath-CoT-10k                | Train              | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            | 10,000    |
 | NuminaMath-CoT-100k               | Train              | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           | 100,000   |
-| Teacher\_CoT\_NuminaMath\_10k\_I0 | Distilled (Iter 0) | [HF](https://huggingface.co/datasets/MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0) | 4,000    |
-| –                                 | Distilled (Iter 1) | \[]                                                                              | –         |
-| –                                 | Distilled (Iter 2) | \[]                                                                              | –         |
 | Math500                           | Test               | [HF](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                   | 500       |
 | GSM8K                             | Test               | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)              | 1,300     |
 | MMLU PRO                          | Test               | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)      | 1,350     |
