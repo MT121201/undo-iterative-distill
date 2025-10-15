@@ -1,0 +1,3 @@
+[submodule "easydistill"]
+	path = easydistill
+	url = https://github.com/modelscope/easydistill.git
