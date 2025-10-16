@@ -24,6 +24,8 @@ Our implementation follows two goals:
 ---
 
 ##  Updates
+* **2025/10/16** – We use **easydistill** for Standard Knowledge Distillation for comparing with UNDO method.
+* **2025/10/16** – Distillation by UNDO method have finished, result showed below.
 * **2025/09/25** – Student evaluation results for Iteration 2 are in! See **Student Evaluation Results** section.
 * **2025/09/17** – Student finetuning code is working, student now being finetuned
 * **2025/09/11** – Released initial [student test code](src/student.py); see **Running** for usage. Student finetuning code is in progress.
@@ -38,28 +40,29 @@ Our implementation follows two goals:
 | Status | Task                                    |
 | ------ | --------------------------------------- |
 | ✔️     | Prepare training dataset                |
-| ✔️     | Implement teacher model (1st iteration) |
+| ✔️     | Implement teacher model |
 | ✔️     | Evaluation method for teacher responses |
-| ✔️     | Prompt teacher model for good answers   |
-| ✔️       | Generate 1st teacher-distilled dataset  |
 | ✔️      | Implement student model                 |
 | ✔️     | Prepare test datasets                |
-| ✔️      | Test student on Test datasets  #0         |
-| ✔️      | Train student on distilled dataset      |
-| ✔️      | Test student on Test datasets  #1        |
-| ✔️      | Continues 2nd iteration          |
+| ✔️      | UNDO iteration 1 updated!        |
+| ✔️      | UNDO iteration 2 updated!      |
+| ✔️      | UNDO iteration 3 updated!         |
+| ✔️      | UNDO iteration 4 updated!          |
+| ✔️      | Standard Knowledge Distillation DONE!   |
 | ⬜      | ...         |
 
 
 ---
-## Student Evaluation Results
+## Student Evaluation Results by UNDO Method
 
 | Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MMLU_PRO** | SVAMP* |
 | ------------------- | --------- | ------- | ------ | -------- | ------ |
 |                     | 0         | 9.6     | 31.16  | 13.76    | 75.79  |
 |                     | 1         | 32.4    | 47.65  | 14.53    | 83.33  |
 |                     | 2         | 35.80   | 54.22  | 15.32    | 84.40  |
-|                     | 3         | -       | -      | -        | -      |
+|                     | 3         | 37.85       | 54.80      | 15.32        | 85.42      |
+|                     | 4         | 33.20       | 46.62      | 15.10        | 85.10      |
+|                     | 5         | 33.20       | 45.33      | 15.28        | 84.66      |
 
 ---
 ![vis](vis/student_vis.png)
@@ -99,7 +102,7 @@ See [doc/installation.md](doc/installation.md) for detailed setup instructions.
 
 ---
 
-## 🚀 Running
+## 🚀 Running UNDO method
 **NOTE**: This currently messy because now build and test code phase, later will use .sh files to run the experiments.
 
 ### Teacher Inference
@@ -195,4 +198,6 @@ This will:
 
   * The teacher outputs long strings instead of numbers,
   * Multiple answers are given instead of one boxed result.
+
+
 

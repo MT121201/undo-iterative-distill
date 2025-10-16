@@ -57,6 +57,8 @@ def main():
 
     args = parser.parse_args()
 
+
+# NOTE: Adjusted for I1-2-3
     # Load dataset
     if args.dataset == "10k":
         print("Loading 10k dataset")
