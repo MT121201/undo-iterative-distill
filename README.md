@@ -55,14 +55,7 @@ Our implementation follows two goals:
 ---
 ## Student Evaluation Results by UNDO Method
 
-| Model: QWEN2.5 1.5B | Iteration | Math500 | GSM8K* | MMLU_PRO** | SVAMP* |
-| ------------------- | --------- | ------- | ------ | -------- | ------ |
-|                     | 0         | 9.6     | 31.16  | 13.76    | 75.79  |
-|                     | 1         | 32.4    | 47.65  | 14.53    | 83.33  |
-|                     | 2         | 35.80   | 54.22  | 15.32    | 84.40  |
-|                     | 3         | 37.85       | 54.80      | 15.32        | 85.42      |
-|                     | 4         | 33.20       | 46.62      | 15.10        | 85.10      |
-|                     | 5         | 33.20       | 45.33      | 15.28        | 84.66      |
+
 
 ---
 ![vis](vis/student_vis.png)
