@@ -1,196 +1,308 @@
-
-# INTERACTIVE DISTILLATION VIA UNDO METHOD
-
-![UNDO Overview](vis/UNDO.png)
-
-This project implements and extends the [UNDO framework](https://arxiv.org/pdf/2504.02521), which introduces **interactive knowledge distillation** as an iterative optimization process.
-Instead of relying on a one-shot teacher–student transfer, UNDO repeatedly:
-
-1. Distills knowledge from the teacher,
-2. Evaluates the student,
-3. Identifies student errors,
-4. Regenerates refined teacher rationales conditioned on those errors,
-5. Retrains the student with improved *teacher-distilled datasets*.
-
-This feedback loop makes the student model learn more efficiently and adaptively, particularly for challenging **mathematical and reasoning tasks**.
-
-Our implementation follows two goals:
-
-1. **Validate** whether UNDO works as described in the paper.
-2. **Enhance** UNDO with practical improvements (better prompts, tooling, and efficiency).
-
-![Pipeline](vis/UNDO_pipe.png)
+# Intelligent Distillation
+**Preserving Teacher Reasoning with Progressive Hint-Based Distillation**
 
 ---
 
-##  Updates
-* **2025/10/16** – We use **easydistill** for Standard Knowledge Distillation for comparing with UNDO method.
-* **2025/10/16** – Distillation by UNDO method have finished, result showed below.
-* **2025/09/25** – Student evaluation results for Iteration 2 are in! See **Student Evaluation Results** section.
-* **2025/09/17** – Student finetuning code is working, student now being finetuned
-* **2025/09/11** – Released initial [student test code](src/student.py); see **Running** for usage. Student finetuning code is in progress.
-* **2025/09/10** – All test datasets prepared; details in **Datasets** section.
-* **2025/09/08** – Teacher model **QWEN3-30B-A3B** finished generating the first distilled dataset (10k samples, ~160 GPU hours).
-* **2025/09/02** – New teacher prompt for higher-quality rationales ([code](src/prompt/teacher_prompt.py))
+## Overview
+
+Iterative knowledge distillation methods like [UNDO](https://arxiv.org/abs/2502.12051) teach a student model by having a large teacher repeatedly diagnose student failures and regenerate solutions. But **~40% of teacher attempts are silently discarded** — those where the teacher itself gets the answer wrong.
+
+We ask: *are these failures truly uninformative?*
+
+They are not. Dropped attempts contain partial reasoning, useful intermediate steps, and signals about where the teacher is uncertain. We recover them with two contributions that make distillation both more data-efficient and more epistemically honest.
 
 ---
 
-## Progress Checklist
+## Pipeline
 
-| Status | Task                                    |
-| ------ | --------------------------------------- |
-| ✔️     | Prepare training dataset                |
-| ✔️     | Implement teacher model |
-| ✔️     | Evaluation method for teacher responses |
-| ✔️      | Implement student model                 |
-| ✔️     | Prepare test datasets                |
-| ✔️      | UNDO iteration 1 updated!        |
-| ✔️      | UNDO iteration 2 updated!      |
-| ✔️      | UNDO iteration 3 updated!         |
-| ✔️      | UNDO iteration 4 updated!          |
-| ✔️      | Standard Knowledge Distillation DONE!   |
-| ⬜      | ...         |
-
-
----
-## Student Evaluation Results by UNDO Method
-
-
-
----
-![vis](vis/student_vis.png)
-
-**Iteration 0 = base model without finetuning**
-
-*: Datasets have been modified to match our evaluation format (final answer in `$\boxed{...}$`).
-
-**: MLU_PRO math subset only.
-
-##  Datasets
-
-| Name                              | Type               | Link                                                                             | # Samples |
-| --------------------------------- | ------------------ | -------------------------------------------------------------------------------- | --------- |
-| NuminaMath-CoT-10k                | Train              | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-10k)            | 10,000    |
-| NuminaMath-CoT-100k               | Train              | [HF](https://huggingface.co/datasets/MinTR-KIEU/NuminaMath-CoT-100k)           | 100,000   |
-| Math500                           | Test               | [HF](https://huggingface.co/datasets/HuggingFaceH4/MATH-500)                   | 500       |
-| GSM8K                             | Test               | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_gsm8k_boxed)              | 1,300     |
-| MMLU PRO                          | Test               | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_MMLU_Pro_math_boxed)      | 1,350     |
-| SVAMP                             | Test               | [HF](https://huggingface.co/datasets/MinTR-KIEU/Test_SVAMP_boxed)              | 300       |
-
----
-
-
-## 💻 GPU Usage
-
-| Model         | Recommended VRAM | Current Setup               | Platform | Notes                            |
-| ------------- | ---------------- | --------------------------- | -------- | -------------------------------- |
-| QWEN3-30B-A3B | 64 GB            | 6× RTX 5060 Ti (16 GB)     | GPU2     | \~4× RTX 3090 (24 GB) equivalent |
-| QWEN2.5 1.5B  | 8 GB           | 1× RTX 3090 Ti (24 GB)      | GPU2  | Eval Mode              |
-| QWEN2.5 1.5B  | 24 GB           | 2x RTX 3090 Ti (24 GB)      | GPU2  | Train Mode              |
----
-
-## ⚙️ Installation
-
-See [doc/installation.md](doc/installation.md) for detailed setup instructions.
-
----
-
-## 🚀 Running UNDO method
-**NOTE**: This currently messy because now build and test code phase, later will use .sh files to run the experiments.
-
-### Teacher Inference
-
-Set your Hugging Face token first:
-
-```bash
-export HF_TOKEN="your_huggingface_token"
+```
+╔══════════════════════════════════════════════════════════════════════════╗
+║              Intelligent Distillation  ·  Iteration K                   ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║   ┌─────────────┐    ┌──────────────────┐    ┌───────────────────────┐  ║
+║   │  Val Set    │───►│ Student Infer    │───►│   Error Signals  ★    │  ║
+║   └─────────────┘    └──────────────────┘    │  S = 0.6·A + 0.4·R   │  ║
+║                                              └──────────┬────────────┘  ║
+║                                                         │               ║
+║              ┌──────────────────────────────────────────┘               ║
+║              │  Teacher Context per question:                            ║
+║              │    · all val error signals                                ║
+║              │    · student response at K−1                             ║
+║              │    · teacher response at K−1                             ║
+║              ▼                                                           ║
+║         ┌─────────┐                                                      ║
+║         │ Teacher │                                                      ║
+║         └────┬────┘                                                      ║
+║              │                                                           ║
+║       ┌──────┴──────┐                                                    ║
+║    CORRECT        WRONG                                                  ║
+║       │              │                                                   ║
+║       ▼              ▼                                                   ║
+║  ┌─────────┐   ╔═══════════════════════════════╗                        ║
+║  │ Dataset │   ║  Progressive Hint Cascade  ★  ║                        ║
+║  └────┬────┘   ║                               ║                        ║
+║       │        ║  Stage 1 · no hint   → WRONG  ║                        ║
+║       │        ║          ↓                    ║                        ║
+║       │        ║  Stage 2 · answer    → WRONG  ║                        ║
+║       │        ║          ↓                    ║                        ║
+║       │        ║  Stage 3 · solution  → WRONG  ║                        ║
+║       │        ║          ↓                    ║                        ║
+║       │        ║        Drop                   ║                        ║
+║       │        ╚═══════════╤═══════════════════╝                        ║
+║       │                    │ CORRECT (recovered)                         ║
+║       └────────────────────┘                                             ║
+║                    │                                                     ║
+║                    ▼                                                     ║
+║           ┌─────────────────┐                                            ║
+║           │  Student SFT   │──────────────────────► Iteration K+1       ║
+║           └─────────────────┘                                            ║
+║                                                          ★ = our contrib ║
+╚══════════════════════════════════════════════════════════════════════════╝
 ```
 
-Run teacher inference to generate a **teacher-distilled dataset**:
+---
 
-```bash
-python src/teacher.py \
-    --dataset NUMINA_10K_or_100K \
-    --iter ITERATION_ID \
-    --output output.jsonl \
-    --hf_repo MinTR-KIEU/Teacher_CoT_NuminaMath_10k_I0 \
-    --hf_private 0 \
-    --push_every_min 0
+## Contribution 1 — Progressive Hint Cascade
+
+Instead of discarding an incorrect teacher attempt, we retry it with the minimum hint necessary to produce a correct response:
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │               Progressive Hint Cascade                      │
+  ├─────────────────────────────────────────────────────────────┤
+  │                                                             │
+  │  attempt(no hint)          ──► CORRECT → save              │
+  │       │ WRONG                                              │
+  │       ▼                                                     │
+  │  attempt(answer hint)      ──► CORRECT → save  ┐           │
+  │       │ WRONG               teacher still builds│           │
+  │       ▼                     its own reasoning  │           │
+  │  attempt(solution hint)    ──► CORRECT → save  ┘           │
+  │       │ WRONG                                              │
+  │       ▼                                                     │
+  │      Drop                                                   │
+  └─────────────────────────────────────────────────────────────┘
 ```
 
-Parameters:
+**Why graduated?** A pilot study reveals a key asymmetry in how teachers use hints:
 
-* `--dataset` : Choose between `10k` or `100k`.
-* `--iter` : `0` = first distillation, `1` = second, etc.
-* `--output` : Local output file.
-* `--hf_repo` : Hugging Face repo for dataset.
-* `--hf_private` : 0 = public, 1 = private.
-* `--push_every_min` : Auto-push interval (0 = disabled).
+```
+  Teacher Reasoning Fidelity  (BERTScore F1: teacher explanation vs GT solution)
 
+  Correct hint given ──  ░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓  peak 0.80–0.90  → paraphrases
+  Wrong / no hint   ──  ▓▓▓▓▓▓░░░░░░░░░░░░░░  peak 0.20–0.30  → reasons
 
-### Student Training
-Fine-tune the student model on a Hugging Face dataset that contains `problem`, `teacher_solution`, and `gt` fields:
-
-
-```bash
-python src/student.py \
---mode train \
---dataset MinTR_KIEU/NuminaMath-CoT-10k \
---output runs/student_train_preds.jsonl \
---hf_repo your-username/undo-student-outputs \
---hf_path_in_repo data/student_train_preds.jsonl \
---push_every_min 30 \
---hf_private 1 \
---train_epochs 1 \
---per_device_train_batch_size 2 \
---gradient_accumulation_steps 8 \
---lr 2e-5 \
---save_dir ./student_ckpt \
---hf_save 1 \
---hf_model_repo your-username/qwen2.5-math-student \
---hf_model_private 1
+                        0.0   0.25  0.50  0.75  1.0
+                        ├─────┼─────┼─────┼─────┤
+                        self-reasoning       copying
 ```
 
-
-This will:
-- Train the model for 1 epoch using `teacher_solution` as the target.
-- Save checkpoints to `./student_ckpt`.
-- Write a JSONL file of `{problem, teacher_solution, student_solution, gt}` to `runs/student_train_preds.jsonl`.
-- Push the dataset JSONL to the HF Hub every 30 minutes.
-- Push the fine-tuned model weights to your HF repo at the end.
-
+When given only the *final answer* (not the full solution), the teacher is guided to the right destination but constructs its own reasoning path. This is the core insight: **the answer hint preserves teacher-internal reasoning while still enabling recovery.**
 
 ---
 
+## Contribution 2 — Reasoning-Aware Error Signal
 
-### Student Testing
-Evaluate the student model on a dataset with `problem` and `gt` fields:
+UNDO's validation feedback is binary: **1** (correct) or **0** (wrong). We replace it with a continuous signal that tracks *how* the student is improving across iterations:
 
+```
+  S  =  0.6 × A  +  0.4 × R
 
-```bash
-python src/student.py \
---mode test \
---dataset MinTR_KIEU/MMLU_PRO_math_test \
---output runs/student_test_preds.jsonl
+  A ∈ {+1, −1}                    answer correctness
+  R ∈ {−1, −0.5, 0, +0.5, +1}    reasoning quality (LLM-judged rubric)
+  S ∈ [−1, +1]                    combined error signal
 ```
 
+**Rubric for R:**
 
-This will:
-- Run inference on the dataset.
-- Evaluate accuracy using `evaluate_model_response`.
-- Save predictions and evaluation results to `runs/student_test_preds.jsonl`.
+```
+  +1.0  ──  correct logic, minimal gaps
+  +0.5  ──  minor slip, structure good
+   0.0  ──  unclear / missing key steps
+  −0.5  ──  wrong approach but coherent
+  −1.0  ──  nonsense / cannot reason
+```
 
+Instead of a snapshot, the teacher now sees a **trajectory**:
+
+```
+  Iteration:    init     1       2       3
+  Score S :   [ −0.9,  −0.4,  +0.2,  +0.9 ]
+                 ↑ wrong reasoning → slowly improving → correct
+```
+
+The teacher can recognise and reinforce structural progress even before the final answer is correct.
 
 ---
+
+## Why It Works — The L / M / H Analysis
+
+We measure BERTScore F1 similarity between each teacher explanation and the GT solution, and classify recovered samples into three groups:
+
+```
+  ┌──────────────────────────────────────────────────────────────┐
+  │       Teacher Reasoning Fidelity Spectrum                    │
+  ├────────────┬─────────────┬───────────────────────────────────┤
+  │     L      │      M      │              H                    │
+  │  < 0.50    │  0.50–0.75  │           ≥ 0.75                  │
+  ├────────────┼─────────────┼───────────────────────────────────┤
+  │ independent│   guided,   │  paraphrases / copies solution    │
+  │  reasoning │ not copying │                                   │
+  ├────────────┼─────────────┼───────────────────────────────────┤
+  │  ↑ OOD     │             │  ↑ in-domain  ↓ OOD (overfits)   │
+  └────────────┴─────────────┴───────────────────────────────────┘
+```
+
+Progressive hinting **concentrates the recovered dataset in L**.
+Always-Solution hinting **concentrates it in M/H**.
+
+Training students on L vs H directly confirms the mechanism:
+
+| Group | GSM8K | MATH      | StrategyQA (OOD) |
+|-------|-------|-----------|-----------------|
+| L     | 67.4% | **37.4%** | **14.3%**       |
+| H     | 63.1% | 31.2%     | 11.6%           |
+
+**Verified hypothesis: teacher internal reasoning leads to better student adaptation and out-of-domain generalisation.**
+
 ---
 
-## 📝 Notes for Reproduction
+## Results
 
-* Evaluation is handled with our custom extractor ([code](src/evaluate.py)) that parses final answers inside `$\boxed{...}$`.
-* This works well for most math problems, but may fail if:
+### Main comparison — 3 iterations, NuminaMath-CoT 10K
 
-  * The teacher outputs long strings instead of numbers,
-  * Multiple answers are given instead of one boxed result.
+| Benchmark          | UNDO   | Always-Solution | **Progressive (ours)** | Δ vs UNDO |
+|--------------------|:------:|:---------------:|:----------------------:|:---------:|
+| GSM8K              | 61.1%  | 65.2%           | **68.2%**              | +7.0 pp   |
+| MATH               | 34.6%  | 37.1%           | **39.8%**              | +5.2 pp   |
+| MMLU-Pro           | 14.1%  | 15.3%           | **15.6%**              | +1.5 pp   |
+| SVAMP              | 88.6%  | 89.1%           | **89.6%**              | +1.0 pp   |
+| StrategyQA (OOD)   | 13.4%  | 12.4% ↓         | **14.6%** ↑            | +1.2 pp   |
 
+> Always-Solution degrades on OOD data. Progressive hinting improves both in-domain and out-of-domain — the only method to do so.
 
+### Reasoning-Aware Error Signal comparison
 
+| Validation signal    | Final accuracy |
+|----------------------|:--------------:|
+| **Our score (A+R)**  | **54.2%**      |
+| Binary (0/1)         | 53.3%          |
+| BERTScore            | 52.7%          |
+| No score             | 52.5%          |
+
+---
+
+## Models & Data
+
+| Role    | Model                        |
+|---------|------------------------------|
+| Teacher | Qwen3-30B-A3B-Instruct-2507  |
+| Student | Qwen2.5-Math-1.5B-Instruct   |
+
+**Training:** NuminaMath-CoT · 10K samples (resource-scaled reproduction)
+**Evaluation:** GSM8K · SVAMP · MATH · MMLU-Pro · StrategyQA
+
+---
+
+## Reproduction
+
+### Setup
+
+```bash
+conda create -n teacher python=3.10 -y && conda activate teacher
+pip install -r requirements.txt && pip install flash-attn --no-build-isolation
+
+conda create -n student python=3.10 -y && conda activate student
+pip install -r requirements.txt
+
+export HF_TOKEN="<your_token>"
+```
+
+### Full pipeline (orchestrated)
+
+```bash
+python src/pipeline.py \
+  --dataset      MinTR-KIEU/NuminaMath-CoT-10k \
+  --val_dataset  MinTR-KIEU/NuminaMath-val \
+  --iterations   3 \
+  --hint_strategy   progressive \
+  --scoring_signal  reasoning_aware \
+  --output_dir   runs/exp_01 \
+  --hf_repo      MinTR-KIEU/intelligent-distill-outputs
+```
+
+The orchestrator generates `val_signals.jsonl` and prints the exact shell commands for every stage of every iteration.
+
+### Step-by-step
+
+```bash
+# Iter 0 — baseline teacher pass
+python src/teacher.py --iter 0 --dataset 10k \
+  --output runs/iter_0/teacher_output.jsonl \
+  --hf_repo MinTR-KIEU/intelligent-distill-outputs
+
+# Student SFT  (after uploading teacher output to HF)
+python src/student.py --mode train \
+  --dataset  MinTR-KIEU/<teacher-iter0-dataset> \
+  --save_dir runs/iter_0/student_ckpt \
+  --output   runs/iter_0/student_output.jsonl
+
+# Student validation inference
+python src/student.py --mode test \
+  --model_path runs/iter_0/student_ckpt \
+  --dataset    MinTR-KIEU/NuminaMath-val \
+  --output     runs/iter_0/val_raw.jsonl
+
+# Iter 1 — with Progressive Hint Cascade
+python src/teacher.py --iter 1 --dataset 10k \
+  --hint_strategy      progressive \
+  --prev_teacher_jsonl runs/iter_0/teacher_output.jsonl \
+  --prev_student_jsonl runs/iter_0/student_output.jsonl \
+  --val_signals_jsonl  runs/iter_0/val_signals.jsonl \
+  --output runs/iter_1/teacher_output.jsonl \
+  --hf_repo MinTR-KIEU/intelligent-distill-outputs
+```
+
+### Ablations
+
+```bash
+--hint_strategy   always_solution   # always provide full GT solution
+--hint_strategy   none              # UNDO baseline — drop on failure
+--scoring_signal  binary            # binary {0, 1} error signal
+```
+
+### Tests
+
+```bash
+pytest                        # 162 tests, all passing
+pytest test/test_hint.py      # progressive hint cascade
+pytest test/test_scoring.py   # reasoning-aware error signal
+pytest test/test_evaluate.py  # LaTeX-aware answer extraction
+```
+
+---
+
+## Code Map
+
+```
+src/
+  pipeline.py        full iterative loop orchestrator  ← start here
+  teacher.py         teacher inference · iter 0 and iter K≥1
+  student.py         student SFT + benchmark evaluation
+  hint.py            Contribution 1: progressive hint cascade
+  scoring.py         Contribution 2: S = 0.6·A + 0.4·R
+  similarity.py      BERTScore F1 · L/M/H group classification
+  evaluate.py        LaTeX-aware \boxed{} answer extraction
+  utils.py           HFPusher — background periodic HF dataset uploads
+  prompt/
+    teacher_prompt.py  iter0 · iterK · answer-hint · solution-hint templates
+```
+
+`hint.py` accepts any `prompt → response` callable, keeping it model-agnostic and independently testable. Each module maps to a section of the paper.
+
+---
+
+## Baseline
+
+This work extends **UNDO** (*Iterative Knowledge Distillation via Unlearning and Distillation*, preprint — no official code released). We reproduced UNDO at 10K scale using a ~30B teacher, confirming performance trends consistent with the paper: accuracy peaks at iteration 3, then degrades — a convergence and overfitting signal that holds across both settings.
